@@ -166,6 +166,10 @@ Rectilinear survey language: 12px card radius, pill controls (999px), 8px fields
 ### Chainage ticker
 - **Style:** dashed orange rule, animated tick strip, mono elapsed timer. Reports real elapsed time only — never staged progress.
 
+### Listen bar
+- **Style:** surface card, 1px ink border; uppercase soft-ink heading; pill buttons, selects for section/voice/speed.
+- **Behavior:** narrates rendered bullets in order via speechSynthesis (no new content); current bullet and section highlight in inferred-amber wash with accent outline; status line names section and bullet position.
+
 ### Navigation
 No site navigation; single surface. Section order is the wayfinding.
 
