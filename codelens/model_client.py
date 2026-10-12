@@ -29,10 +29,6 @@ def check_ollama(host: str = DEFAULT_HOST) -> list[str]:
     return [m.get("name", "") for m in data.get("models", [])]
 
 
-def check_model(model: str, host: str = DEFAULT_HOST) -> None:
-    resolve_model(model, host)
-
-
 def _installed(model: str, models: list[str]) -> bool:
     base = model.split(":")[0]
     return any(m == model or m.startswith(base + ":") for m in models)

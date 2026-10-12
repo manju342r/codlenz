@@ -153,7 +153,7 @@ class Handler(BaseHTTPRequestHandler):
                 chunks = retrieve(index, question)
                 if not chunks:
                     self._send({"answer": "No relevant evidence found — will not invent an answer.",
-                                "verified": [], "rejected": []})
+                                "verified": [], "rejected": [], "model": model})
                     return
                 system, user = build_ask_prompt(question, chunks)
                 data, used_model, fallback_notice = chat_with_fallback(model, system, user, DEFAULT_HOST)
