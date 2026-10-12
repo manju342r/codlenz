@@ -10,7 +10,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from .model_client import DEFAULT_HOST, DEFAULT_MODEL, ModelError, chat_with_fallback, resolve_model
-from .prompt_builder import build_ask_prompt, build_explain_prompt
+from .prompt_builder import build_ask_prompt, build_explain_prompt, enforce_bullets
 from .retriever import retrieve
 from .scanner import scan_repo
 from .source import SourceError, is_git_url, repo_name_from_url, resolve_source
@@ -145,6 +145,7 @@ def analyze(source, model, host):
                 console.print(f"[yellow]{fallback_notice}[/yellow]")
             else:
                 console.print(f"[dim]Answered by {used_model}.[/dim]")
+            data["answer"] = enforce_bullets(data["answer"])
             ok, bad = verify_refs(index["root"], [clean_ref(r) for r in data.get("refs", [])])
             if is_git_url(source):
                 out_path = Path.cwd() / f"{repo_name_from_url(source)}-codelens-analysis.md"

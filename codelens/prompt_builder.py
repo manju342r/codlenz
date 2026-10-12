@@ -1,6 +1,8 @@
 """Prompt builder: keeps prompts small for 3B local models, JSON-only contract."""
 from __future__ import annotations
 
+import re
+
 SCHEMA_HINT = """Return ONLY valid JSON, no markdown fences, matching this shape
 (angle brackets mark places you fill in — never copy them literally):
 {"answer": "...", "refs": [{"file": "<repo-relative path from evidence>", "start": <first line int>, "end": <last line int>, "quote": "<exact lines copied from evidence>"}]}"""
@@ -57,6 +59,51 @@ def _numbered(text: str, cap_lines: int = 140) -> str:
     lines = text.splitlines()[:cap_lines]
     width = len(str(len(lines))) if lines else 1
     return "\n".join(f"{i + 1:>{width}}| {l}" for i, l in enumerate(lines))
+
+
+_BULLET_RE = re.compile(r"^(\s{0,8})([-*+]|\d+[.)])\s+")
+_SENTENCE_RE = re.compile(r"(?<=[.!?])\s+")
+
+
+def enforce_bullets(answer: str) -> str:
+    """Rewrite model prose into strict bullets: headers stay, everything else
+    becomes `- ` items (nested indent preserved, tables flattened, one bullet
+    per sentence so unrelated findings never share a line)."""
+    out: list[str] = []
+    in_fence = False
+    for raw in answer.splitlines():
+        stripped = raw.strip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            continue
+        if not stripped:
+            continue
+        if stripped.startswith("## "):
+            out.append(stripped)
+            continue
+        if in_fence:
+            out.append(f"- `{stripped}`")
+            continue
+        if stripped.startswith("|"):
+            cells = [c.strip() for c in stripped.strip("|").split("|")]
+            cells = [c for c in cells if c and set(c) - set("-: ")]
+            if not cells:
+                continue
+            out.append("- " + " — ".join(cells))
+            continue
+        m = _BULLET_RE.match(raw)
+        if m:
+            out.append(f"{m.group(1)[:6]}- {raw[m.end():].strip()}")
+            continue
+        if stripped.startswith("#"):
+            text = stripped.lstrip("#").strip()
+            if text:
+                out.append(f"- **{text}**")
+            continue
+        for sent in _SENTENCE_RE.split(stripped):
+            if sent.strip():
+                out.append(f"- {sent.strip()}")
+    return "\n".join(out)
 
 
 def build_explain_prompt(index: dict, file_contents: list[dict]) -> tuple[str, str]:

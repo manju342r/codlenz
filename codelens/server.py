@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
 from .model_client import DEFAULT_HOST, DEFAULT_MODEL, ModelError, chat_with_fallback, resolve_model
-from .prompt_builder import build_ask_prompt, build_explain_prompt
+from .prompt_builder import build_ask_prompt, build_explain_prompt, enforce_bullets
 from .retriever import retrieve
 from .scanner import scan_repo
 from .verifier import clean_ref, verify_refs
@@ -145,6 +145,7 @@ class Handler(BaseHTTPRequestHandler):
                         continue
                 system, user = build_explain_prompt(index, contents)
                 data, used_model, fallback_notice = chat_with_fallback(model, system, user, DEFAULT_HOST)
+                data["answer"] = enforce_bullets(data["answer"])
             else:
                 question = (body.get("q") or body.get("question") or "").strip()
                 if not question:

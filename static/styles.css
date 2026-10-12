@@ -259,6 +259,25 @@ button:disabled {
 .answer-body { max-width: 72ch; }
 .answer-body p { margin: 0 0 0.9rem; }
 
+.answer-body h3 {
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.35rem;
+  margin: 1.3rem 0 0.5rem;
+}
+
+.answer-body ul.brief {
+  list-style: square;
+  margin: 0.2rem 0 0.9rem;
+  padding-left: 1.3rem;
+}
+
+.answer-body ul.brief li { margin-bottom: 0.3rem; }
+.answer-body ul.brief li::marker { color: var(--accent); }
+
 .verdict-line {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.85rem;

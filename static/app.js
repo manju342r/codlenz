@@ -15,9 +15,32 @@ function esc(s) {
   }[c]));
 }
 
+function renderBody(text) {
+  let h = "", inList = false;
+  const closeList = () => { if (inList) { h += "</ul>"; inList = false; } };
+  for (const raw of String(text).split("\n")) {
+    const trimmed = raw.trim();
+    if (/^##\s+/.test(trimmed)) {
+      closeList();
+      h += `<h3>${esc(trimmed.replace(/^##\s+/, ""))}</h3>`;
+      continue;
+    }
+    const m = raw.match(/^(\s*)- (.*)$/);
+    if (m) {
+      if (!inList) { h += '<ul class="brief">'; inList = true; }
+      const pad = Math.min(m[1].length, 6);
+      h += `<li${pad ? ` style="margin-left:${(pad * 1.1).toFixed(1)}rem"` : ""}>${esc(m[2])}</li>`;
+      continue;
+    }
+    closeList();
+    if (trimmed) h += `<p>${esc(trimmed)}</p>`;
+  }
+  closeList();
+  return h;
+}
+
 function paragraphs(text) {
-  return esc(text).split(/\n{2,}|\n/).filter((p) => p.trim())
-    .map((p) => `<p>${p}</p>`).join("");
+  return renderBody(text);
 }
 
 function badge(kind) {
