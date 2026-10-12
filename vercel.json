@@ -5,6 +5,10 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "https://multiple-appears-secretary-conventional.trycloudflare.com/api/$1"
+    },
+    {
       "source": "/static/(.*)",
       "destination": "/$1"
     }
