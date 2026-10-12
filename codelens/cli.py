@@ -170,3 +170,17 @@ def ask(path, question, model, host):
         console.print("[yellow]PARTIAL: some refs failed — only ✅ ones are evidence.[/yellow]")
     else:
         console.print("[yellow]UNSUPPORTED/INFERRED: no verified refs — do not treat as fact.[/yellow]")
+
+
+@main.command()
+@click.option("--port", default=8000, show_default=True, help="Local port (127.0.0.1 only).")
+def serve(port):
+    """Start the local demo server (browser UI + JSON API)."""
+    from .server import run
+
+    console.print(f"[green]CodeLens demo at http://127.0.0.1:{port}[/green]")
+    try:
+        run(port)
+    except OSError as e:
+        console.print(f"[red]Error: cannot bind 127.0.0.1:{port} ({e}). Try --port 8001.[/red]")
+        raise SystemExit(1)
