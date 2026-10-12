@@ -9,7 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
-from .model_client import DEFAULT_HOST, DEFAULT_MODEL, ModelError, check_model, chat_json
+from .model_client import DEFAULT_HOST, DEFAULT_MODEL, ModelError, chat_with_fallback, resolve_model
 from .prompt_builder import build_ask_prompt, build_explain_prompt
 from .retriever import retrieve
 from .scanner import scan_repo
@@ -124,7 +124,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         model = body.get("model", DEFAULT_MODEL)
         try:
-            check_model(model, DEFAULT_HOST)
+            model, availability_notice = resolve_model(model, DEFAULT_HOST)
         except ModelError as e:
             self._send({"error": str(e)}, 503)
             return
@@ -144,7 +144,7 @@ class Handler(BaseHTTPRequestHandler):
                     except OSError:
                         continue
                 system, user = build_explain_prompt(index, contents)
-                data = chat_json(model, system, user, DEFAULT_HOST)
+                data, used_model, fallback_notice = chat_with_fallback(model, system, user, DEFAULT_HOST)
             else:
                 question = (body.get("q") or body.get("question") or "").strip()
                 if not question:
@@ -156,9 +156,14 @@ class Handler(BaseHTTPRequestHandler):
                                 "verified": [], "rejected": []})
                     return
                 system, user = build_ask_prompt(question, chunks)
-                data = chat_json(model, system, user, DEFAULT_HOST)
+                data, used_model, fallback_notice = chat_with_fallback(model, system, user, DEFAULT_HOST)
             ok, bad = verify_refs(index["root"], data.get("refs", []))
-            self._send(_render_answer(index["root"], data, ok, bad))
+            resp = _render_answer(index["root"], data, ok, bad)
+            resp["model"] = used_model
+            for note in (availability_notice, fallback_notice):
+                if note:
+                    resp.setdefault("notices", []).append(note)
+            self._send(resp)
         except ModelError as e:
             self._send({"error": str(e)}, 502)
 

@@ -9,7 +9,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from .model_client import DEFAULT_HOST, DEFAULT_MODEL, ModelError, check_model, chat_json
+from .model_client import DEFAULT_HOST, DEFAULT_MODEL, ModelError, chat_with_fallback, resolve_model
 from .prompt_builder import build_ask_prompt, build_explain_prompt
 from .retriever import retrieve
 from .scanner import scan_repo
@@ -107,19 +107,25 @@ def analyze(source, model, host):
                 console.print("[red]Error: empty repository — no source files found.[/red]")
                 sys.exit(2)
             try:
-                check_model(model, host)
+                model, availability_notice = resolve_model(model, host)
             except ModelError as e:
                 console.print(f"[red]Error: {e}[/red]")
                 sys.exit(3)
+            if availability_notice:
+                console.print(f"[yellow]{availability_notice}[/yellow]")
             chosen = _pick_explain_files(index)
             contents = _load_contents(Path(index["root"]), chosen, index["limits"]["max_chars_per_file"])
             system, user = build_explain_prompt(index, contents)
             with console.status(f"[cyan]Asking local model {model}...[/cyan]"):
                 try:
-                    data = chat_json(model, system, user, host)
+                    data, used_model, fallback_notice = chat_with_fallback(model, system, user, host)
                 except ModelError as e:
                     console.print(f"[red]Error: {e}[/red]")
                     sys.exit(3)
+            if fallback_notice:
+                console.print(f"[yellow]{fallback_notice}[/yellow]")
+            else:
+                console.print(f"[dim]Answered by {used_model}.[/dim]")
             ok, bad = verify_refs(index["root"], data.get("refs", []))
             if is_git_url(source):
                 out_path = Path.cwd() / f"{repo_name_from_url(source)}-codelens-analysis.md"
@@ -161,17 +167,23 @@ def ask(source, question, model, host):
                 console.print("[yellow]No relevant evidence found — I will not invent an answer. Try different keywords.[/yellow]")
                 sys.exit(0)
             try:
-                check_model(model, host)
+                model, availability_notice = resolve_model(model, host)
             except ModelError as e:
                 console.print(f"[red]Error: {e}[/red]")
                 sys.exit(3)
+            if availability_notice:
+                console.print(f"[yellow]{availability_notice}[/yellow]")
             system, user = build_ask_prompt(question, chunks)
             with console.status(f"[cyan]Asking local model {model}...[/cyan]"):
                 try:
-                    data = chat_json(model, system, user, host)
+                    data, used_model, fallback_notice = chat_with_fallback(model, system, user, host)
                 except ModelError as e:
                     console.print(f"[red]Error: {e}[/red]")
                     sys.exit(3)
+            if fallback_notice:
+                console.print(f"[yellow]{fallback_notice}[/yellow]")
+            else:
+                console.print(f"[dim]Answered by {used_model}.[/dim]")
             ok, bad = verify_refs(index["root"], data.get("refs", []))
             console.print(Panel(data["answer"], title=f"Q: {question}"))
             _show_refs(ok, bad)

@@ -148,7 +148,7 @@ async function runModel(action) {
     if (data.error) { showError(data.error); return; }
     data.elapsed_s = Math.round(((performance.now() - t0) / 1000) * 10) / 10;
     renderAnswer(data);
-    surveyTime.textContent = `last survey ${data.elapsed_s}s · ${new Date().toLocaleTimeString()}`;
+    surveyTime.textContent = `last survey ${data.elapsed_s}s · ${data.model || "unknown model"} · ${new Date().toLocaleTimeString()}`;
   } catch (e) { stopChainage(); showError(e.message); } finally { setBusy(false); }
 }
 

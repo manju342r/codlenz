@@ -54,8 +54,9 @@ prompts/            prompt text mirrors
 
 ```bash
 ollama serve
-ollama pull qwen2.5:3b
-ollama list   # confirm qwen2.5:3b is present
+ollama pull gemma3:4b     # primary model
+ollama pull qwen2.5:3b    # fallback model
+ollama list   # confirm both are present
 ```
 
 ## Installation

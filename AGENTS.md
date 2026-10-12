@@ -7,7 +7,7 @@
 - Entry: `codelens/cli.py` (`main()` Click group). No other entrypoints.
 
 ## Model (local only)
-- Ollama at `localhost:11434`, model `qwen2.5:3b`. Check with `ollama list`; pull with `ollama pull qwen2.5:3b`.
+- Ollama at `localhost:11434`, primary model `gemma3:4b`, fallback `qwen2.5:3b`. Check with `ollama list`; pull with `ollama pull gemma3:4b` / `ollama pull qwen2.5:3b`.
 - `model_client.chat_json` sets `num_ctx=16384` — required. Ollama's runner defaults to 4096 ctx and large prompts fail with HTTP 500 without the override. Don't remove it.
 - Never add paid/cloud LLM APIs, embeddings, or vector DBs — local-only is the product's core claim.
 
