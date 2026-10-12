@@ -411,16 +411,18 @@ const Narrator = (() => {
       const fillVoices = () => {
         const sel = document.getElementById("narr-voice");
         if (!sel || sel.options.length) return;
-        speechSynthesis.getVoices().forEach((v) => {
+        const voices = speechSynthesis.getVoices();
+        if (!voices || !voices.length) return;
+        voices.forEach((v) => {
           const o = document.createElement("option");
           o.value = v.name;
           o.textContent = `${v.name} (${v.lang})`;
           sel.appendChild(o);
         });
-        const eddy = [...sel.options].find((o) => /eddy/i.test(o.value));
-        const sysDefault = [...sel.options].find((o) =>
-          speechSynthesis.getVoices().find((v) => v.name === o.value && v.default));
-        (eddy || sysDefault || sel.options[0]).selected = true;
+        const target = [...sel.options].find((o) => /eddy/i.test(o.value))
+          || [...sel.options].find((o) => voices.find((v) => v.name === o.value && v.default))
+          || sel.options[0];
+        if (target) target.selected = true;
       };
       fillVoices();
       if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = fillVoices;
