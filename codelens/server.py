@@ -142,6 +142,9 @@ class Handler(BaseHTTPRequestHandler):
         if url.path.startswith("/static/"):
             self._serve_static(url.path[len("/static/"):])
             return
+        if url.path in ("/styles.css", "/app.js"):
+            self._serve_static(url.path.lstrip("/"))
+            return
         if url.path == "/api/scan":
             try:
                 raw = parse_qs(url.query).get("path", [""])[0]

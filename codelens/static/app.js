@@ -413,9 +413,12 @@ const Narrator = (() => {
           const o = document.createElement("option");
           o.value = v.name;
           o.textContent = `${v.name} (${v.lang})`;
-          if (v.default) o.selected = true;
           sel.appendChild(o);
         });
+        const eddy = [...sel.options].find((o) => /eddy/i.test(o.value));
+        const sysDefault = [...sel.options].find((o) =>
+          speechSynthesis.getVoices().find((v) => v.name === o.value && v.default));
+        (eddy || sysDefault || sel.options[0]).selected = true;
       };
       fillVoices();
       if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = fillVoices;
