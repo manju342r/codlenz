@@ -18,7 +18,8 @@
 - `server.py` is stdlib-only (`http.server`), binds 127.0.0.1, read-only analysis. Keep zero web dependencies.
 
 ## Frontend
-- The demo page is inline `PAGE` in `server.py`. For any UI polish, load the `impeccable` skill first and follow it.
+- The demo page is `static/` (index.html, styles.css, app.js), served by `server.py`. For any UI polish, load the `impeccable` skill first and follow it.
+- Visual authority: `DESIGN.md` + `.impeccable/design.json` (generated from the built CSS — update both if tokens change). Product context: `PRODUCT.md`. Surface contract: `.impeccable/surfaces/static-index-html.md`.
 
 ## Verify (no test suite exists)
 - No pytest/unittest config — verify with live runs: invalid-path scan (expect exit 2), `analyze` + `ask` against this repo itself, and the 7-case verifier matrix (`valid` accepted; bad-quote/traversal/bad-range/beyond-EOF/missing-file/absolute rejected).

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import html
 import json
+import mimetypes
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
@@ -13,35 +15,7 @@ from .retriever import retrieve
 from .scanner import scan_repo
 from .verifier import verify_refs
 
-PAGE = """<!doctype html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CodeLens — local demo</title>
-<style>body{font-family:system-ui,sans-serif;max-width:860px;margin:2rem auto;padding:0 1rem}
-input{width:100%;padding:.5rem;margin:.25rem 0}button{padding:.5rem 1rem;margin:.25rem .25rem .25rem 0;cursor:pointer}
-pre{background:#f4f4f4;padding:1rem;white-space:pre-wrap;overflow:auto}.ok{color:green}.bad{color:red}.spin{color:#666}</style>
-</head><body>
-<h1>CodeLens — local demo</h1>
-<p>Model: <b>qwen2.5:3b</b> via Ollama on localhost. Nothing leaves this machine.</p>
-<label>Repository path <input id="path" value="/Users/manjunathchakri/Documents/projects/hacktober-kkh"></label>
-<label>Question <input id="q" value="How does CodeLens verify source references?"></label>
-<div><button onclick="go('scan')">1. Scan</button>
-<button onclick="go('analyze')">2. Analyze</button>
-<button onclick="go('ask')">3. Ask</button></div>
-<pre id="out">Pick a step above.</pre>
-<script>
-async function go(action){
-  const out=document.getElementById('out');
-  out.innerHTML='<span class="spin">Working (model calls take ~15s)…</span>';
-  const path=document.getElementById('path').value, q=document.getElementById('q').value;
-  let url='/api/scan?path='+encodeURIComponent(path), opts={};
-  if(action!=='scan'){url='/api/'+action;opts={method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path,q})}}
-  try{
-    const r=await fetch(url,opts), d=await r.json();
-    out.textContent=typeof d==='string'?d:JSON.stringify(d,null,2);
-  }catch(e){out.textContent='Request failed: '+e}
-}
-</script></body></html>"""
-
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 def _check_path(path: str) -> Path:
     p = Path(path or "").expanduser()
@@ -50,11 +24,29 @@ def _check_path(path: str) -> Path:
     return p.resolve()
 
 
-def _render_answer(data: dict, ok: list, bad: list) -> dict:
+def _coord(ref: dict) -> str:
+    return f"{ref.get('file', '?')}:{ref.get('start', '?')}-{ref.get('end', '?')}"
+
+
+def _excerpt(repo_root: str, ref: dict, max_lines: int = 15) -> str:
+    try:
+        root = Path(repo_root).resolve()
+        target = (root / str(ref.get("file", ""))).resolve()
+        target.relative_to(root)
+        lines = target.read_text(encoding="utf-8", errors="replace").splitlines()
+        s, e = int(ref["start"]), int(ref["end"])
+        return "\n".join(l[:200] for l in lines[s - 1:min(e, s + max_lines - 1)])
+    except (ValueError, OSError, KeyError, IndexError):
+        return ""
+
+
+def _render_answer(repo_root: str, data: dict, ok: list, bad: list) -> dict:
+    coords = [_coord(r["ref"]) for r in ok]
     return {
         "answer": data["answer"],
-        "verified": [f"{r['ref']['file']}:{r['ref']['start']}-{r['ref']['end']}" for r in ok],
-        "rejected": [f"{r.get('ref', {}).get('file', '?')}: {r['reason']}" for r in bad],
+        "verified": coords,
+        "excerpts": {c: _excerpt(repo_root, r["ref"]) for c, r in zip(coords, ok)},
+        "rejected": [{"coord": _coord(r.get("ref", {})), "reason": r["reason"]} for r in bad],
     }
 
 
@@ -81,15 +73,31 @@ class Handler(BaseHTTPRequestHandler):
         except json.JSONDecodeError:
             return {}
 
+    def _serve_static(self, rel: str):
+        try:
+            target = (STATIC_DIR / rel).resolve()
+            target.relative_to(STATIC_DIR.resolve())
+        except (ValueError, OSError):
+            self._send({"error": "not found"}, 404)
+            return
+        if not target.is_file():
+            self._send({"error": "not found"}, 404)
+            return
+        ctype, _ = mimetypes.guess_type(str(target))
+        body = target.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", ctype or "application/octet-stream")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_GET(self):
         url = urlparse(self.path)
         if url.path == "/":
-            body = PAGE.encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+            self._serve_static("index.html")
+            return
+        if url.path.startswith("/static/"):
+            self._serve_static(url.path[len("/static/"):])
             return
         if url.path == "/api/scan":
             try:
@@ -150,7 +158,7 @@ class Handler(BaseHTTPRequestHandler):
                 system, user = build_ask_prompt(question, chunks)
                 data = chat_json(model, system, user, DEFAULT_HOST)
             ok, bad = verify_refs(index["root"], data.get("refs", []))
-            self._send(_render_answer(data, ok, bad))
+            self._send(_render_answer(index["root"], data, ok, bad))
         except ModelError as e:
             self._send({"error": str(e)}, 502)
 
