@@ -48,7 +48,7 @@ Architectural strengths, potential issues, missing pieces, open questions. Mark 
 ## 8. QUICK SUMMARY
 The whole repository in under a minute: 3-5 sentences, no new claims.
 
-Rules: short bullets and small tables where useful; no file listings; no repeated facts across sections; keep the full answer under 600 words.
+Rules: bullet points ONLY — no prose paragraphs anywhere in any section; small tables allowed in section 2; no file listings; no repeated facts across sections; keep the full answer under 600 words.
 On refs, quality beats quantity: send at most 10, and include ONLY refs you can copy character-for-character from the numbered evidence — a missing ref is always better than a guessed one. Omit any claim's ref rather than approximating lines or quotes."""
 
 
