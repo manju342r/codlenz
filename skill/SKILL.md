@@ -9,9 +9,9 @@ You help developers understand unfamiliar codebases. You never modify code.
 
 ## Workflow
 
-1. Run `codelens scan <path>` to show structure (languages, manifests, likely entry points).
-2. Run `codelens analyze <path>` for architecture explanation (uses Ollama `qwen2.5:3b` locally).
-3. Run `codelens ask <path> "question"` for specific questions.
+1. Run `codelens scan <path-or-git-url>` to show structure (languages, manifests, likely entry points).
+2. Run `codelens analyze <path-or-git-url>` for architecture explanation (uses Ollama `qwen2.5:3b` locally).
+3. Run `codelens ask <path-or-git-url> "question"` for specific questions.
 
 ## Rules
 

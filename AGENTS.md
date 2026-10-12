@@ -13,6 +13,7 @@
 
 ## Architecture (read before changing)
 - `scanner.py` produces the shared repo index; `scan`/`analyze`/`ask`/`serve` must all reuse it. Never add per-command scanning.
+- `source.py` resolves CLI input (local dir or Git URL) to a local directory via `resolve_source()`. Remote URLs are shallow-cloned to temp dirs, always cleaned up. All commands use it — never add a second resolution path.
 - `retriever.py` is keyword scoring only (filename/def/import/content). Keep it that way.
 - `verifier.py` is the trust boundary: model refs are guilty until proven innocent. Display ✅ only from `verify_refs`; never render a model-cited file:line as fact.
 - `server.py` is stdlib-only (`http.server`), binds 127.0.0.1, read-only analysis. Keep zero web dependencies.

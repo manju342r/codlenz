@@ -72,11 +72,26 @@ pip install -e .
 ## Usage
 
 ```bash
+# Local directory
 codelens scan /path/to/repo
 codelens analyze /path/to/repo
 codelens ask /path/to/repo "Where is authentication implemented?"
-codelens ask /path/to/repo "How does source verification work?"
+
+# GitHub repository directly (cloned temporarily, never modified)
+codelens scan https://github.com/username/repository
+codelens analyze https://github.com/username/repository
+codelens ask https://github.com/username/repository "Where is escaping implemented?"
 ```
+
+## Remote repositories
+
+`scan`, `analyze`, and `ask` accept a local directory **or** a Git URL — both feed the same pipeline.
+
+- Supported: `https://host/user/repo` (`.git` suffix and trailing slash optional), `ssh://git@host/user/repo.git`, and scp-like `git@host:user/repo.git`.
+- Remote repos are shallow-cloned (`--depth 1`) into a temp dir that is deleted after the command, on success or failure. Your own local repositories are never touched.
+- Requires the Git CLI installed. Private repos work only through your existing Git credentials (SSH agent, credential helper) — CodeLens never takes tokens, and URLs with embedded credentials are refused.
+- For remote `analyze`, the report is saved as `./<repo>-codelens-analysis.md` in your current directory (the temp clone is deleted, so in-place saving would vanish).
+- Limitations: shallow clone, no submodules, 120s clone timeout. The demo server (`codelens serve`) stays local-path only.
 
 ## Example output (real run, CodeLens analyzing itself)
 
