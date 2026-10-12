@@ -148,11 +148,27 @@ function wireFocusDimming() {
 }
 
 async function postJSON(url, payload) {
-  const r = await fetch(API + url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  let r;
+  try {
+    r = await fetch(API + url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    throw new Error(`Cannot reach backend (${API || "same origin"}). Make sure 'codelens serve' is running.`);
+  }
+  const ct = r.headers.get("content-type") || "";
+  if (!ct.includes("application/json")) {
+    if (!r.ok) {
+      throw new Error(
+        API
+          ? `Backend returned HTTP ${r.status}`
+          : `No backend connected (HTTP ${r.status}). Run 'codelens serve' and add ?backend=http://localhost:8000 to the URL.`
+      );
+    }
+    throw new Error("Backend did not return JSON.");
+  }
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
   return data;
@@ -164,7 +180,23 @@ async function runScan() {
   Narrator.stop();
   setBusy(true);
   try {
-    const r = await fetch(`${API}/api/scan?path=${encodeURIComponent(path)}`);
+    let r;
+    try {
+      r = await fetch(`${API}/api/scan?path=${encodeURIComponent(path)}`);
+    } catch (err) {
+      throw new Error(`Cannot reach backend (${API || "same origin"}). Make sure 'codelens serve' is running.`);
+    }
+    const ct = r.headers.get("content-type") || "";
+    if (!ct.includes("application/json")) {
+      if (!r.ok) {
+        throw new Error(
+          API
+            ? `Backend returned HTTP ${r.status}`
+            : `No backend connected (HTTP ${r.status}). Run 'codelens serve' and add ?backend=http://localhost:8000 to the URL.`
+        );
+      }
+      throw new Error("Backend did not return JSON.");
+    }
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
     const rows = [
