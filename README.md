@@ -1,3 +1,13 @@
+---
+title: CodLenz
+emoji: 🔍
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # CodLenz
 
 ** Understand any codebase in minutes, not hours.

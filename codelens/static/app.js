@@ -237,6 +237,8 @@ function renderAnswer(data) {
   resultEl.innerHTML = h + "</div>" + (data.elapsed_s != null ? durationBar(data.elapsed_s) : "");
   wireFocusDimming();
   Narrator.refresh();
+  const tag = document.getElementById("model-tag");
+  if (tag && data.model) tag.textContent = `${data.model} · localhost · nothing leaves this machine`;
 }
 
 async function runModel(action) {
