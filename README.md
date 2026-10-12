@@ -2,7 +2,7 @@
 
 **Understand unfamiliar codebases with a local open-weight AI model and verified source evidence.**
 
-CodeLens is a local-first CLI that helps developers understand unfamiliar code. It scans a repository, explains its architecture with a locally running open-weight model (Qwen 2.5 3B via Ollama), and answers questions — with every source reference independently checked by Python, not trusted blindly.
+CodeLens is a local-first CLI that helps developers understand unfamiliar code. It scans a repository, explains its architecture with a locally running open-weight model (Gemma 3 4B via Ollama, Qwen 2.5 3B fallback), and answers questions — with every source reference independently checked by Python, not trusted blindly.
 
 Built for Hacktoberfest Hack Day (MLH × NIAT-KKH): *build small, make it work, make it interesting.*
 
@@ -13,7 +13,7 @@ Entering an unfamiliar codebase, developers struggle with: what the project does
 ## Features
 
 - `codelens scan` — structure overview (languages, manifests, likely entry points). No AI call.
-- `codelens analyze` — architectural explanation from **actual source content**, saved to `codelens-analysis.md`.
+- `codelens analyze` — 8-section technical briefing (overview, stack, architecture, components, flow, AI/memory, findings, summary) from **actual source content**, saved to `codelens-analysis.md`.
 - `codelens ask` — keyword retrieval (no vectors/embeddings) + grounded answer.
 - **Source verification (core differentiator):** every model-cited `{file, start, end, quote}` is resolved safely inside the repo, line-checked, and quote-matched. `✅` = evidence, `❌` = rejected. Claims without ✅ refs are labeled INFERRED/UNSUPPORTED.
 - Path-traversal protection, context budgets, explicit errors — never fake fallbacks.

@@ -1,1 +1,1 @@
-Answer the user question using ONLY the supplied chunks. Return ONLY JSON {"answer","refs"[]}. If evidence is insufficient, say so with refs []. Never invent.
+Answer the user question using ONLY the supplied line-numbered chunks. Return ONLY JSON {"answer","refs"[]}. Copy quotes verbatim without the N| prefix; omit refs you cannot copy exactly. If evidence is insufficient, say so with refs [] and never invent.

@@ -1,7 +1,30 @@
 """Independent source verification. Model claims are never trusted blindly."""
 from __future__ import annotations
 
+import re
 from pathlib import Path
+
+# Evidence chunks are sent line-numbered ("  12| code"); models often copy the
+# gutter into quotes. Strip it before checking — the gutter is our artifact.
+GUTTER_RE = re.compile(r"(?m)^\s*\d+\|\s?")
+
+
+def clean_ref(ref: dict) -> dict:
+    """Return a copy of ref with numbering gutters removed from its quote.
+
+    Also unwraps template copying: models often return the schema example
+    shape verbatim (angle brackets, backticks, quotes around the path).
+    """
+    cleaned = dict(ref)
+    if isinstance(cleaned.get("quote"), str):
+        cleaned["quote"] = GUTTER_RE.sub("", cleaned["quote"])
+    if isinstance(cleaned.get("file"), str):
+        f = cleaned["file"].strip()
+        for wrap in ("<>", "``", "''", '""'):
+            if len(f) >= 2 and f.startswith(wrap[0]) and f.endswith(wrap[1]):
+                f = f[1:-1].strip()
+        cleaned["file"] = f
+    return cleaned
 
 
 def verify_ref(repo_root: str | Path, ref: dict) -> dict:

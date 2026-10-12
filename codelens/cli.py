@@ -14,7 +14,7 @@ from .prompt_builder import build_ask_prompt, build_explain_prompt
 from .retriever import retrieve
 from .scanner import scan_repo
 from .source import SourceError, is_git_url, repo_name_from_url, resolve_source
-from .verifier import verify_refs
+from .verifier import clean_ref, verify_refs
 
 console = Console()
 
@@ -31,20 +31,39 @@ def _load_contents(root: Path, files: list[str], per_file: int) -> list[dict]:
 
 
 def _pick_explain_files(index: dict) -> list[str]:
+    """Small diverse set: project docs, manifests, entry points, then one code file per module."""
     files = index["files"]
+    cap = index["limits"]["max_files_to_model"]
     prio: list[str] = []
-    for m in index.get("manifests", [])[:3]:
-        if m in files:
-            prio.append(m)
+    generated = {"codelens-analysis.md", "CHANGELOG.md"}
+
+    def take(rel: str) -> None:
+        if rel in files and rel not in prio and rel not in generated:
+            prio.append(rel)
+
+    for doc in ("README.md", "README.rst", "ARCHITECTURE.md", "ARCHITECTURE.rst"):
+        take(doc)
+    for m in index.get("manifests", [])[:2]:
+        take(m)
     for e in index.get("entry_points", [])[:2]:
-        if e in files and e not in prio:
-            prio.append(e)
+        take(e)
+    seen: set[str] = set()
     for f in files:
-        if len(prio) >= index["limits"]["max_files_to_model"]:
+        if len(prio) >= cap:
+            break
+        if not f.endswith((".py", ".js", ".ts", ".go", ".rs", ".java")):
+            continue
+        top = f.split("/")[0] if "/" in f else f.rsplit(".", 1)[0]
+        if top in seen:
+            continue
+        take(f)
+        seen.add(top)
+    for f in files:
+        if len(prio) >= cap:
             break
         if f not in prio and f.endswith((".py", ".js", ".ts", ".go", ".rs", ".java")):
-            prio.append(f)
-    return prio
+            take(f)
+    return prio[:cap]
 
 
 def _scan_index(source: str, root: Path) -> dict:
@@ -126,7 +145,7 @@ def analyze(source, model, host):
                 console.print(f"[yellow]{fallback_notice}[/yellow]")
             else:
                 console.print(f"[dim]Answered by {used_model}.[/dim]")
-            ok, bad = verify_refs(index["root"], data.get("refs", []))
+            ok, bad = verify_refs(index["root"], [clean_ref(r) for r in data.get("refs", [])])
             if is_git_url(source):
                 out_path = Path.cwd() / f"{repo_name_from_url(source)}-codelens-analysis.md"
             else:
@@ -184,7 +203,7 @@ def ask(source, question, model, host):
                 console.print(f"[yellow]{fallback_notice}[/yellow]")
             else:
                 console.print(f"[dim]Answered by {used_model}.[/dim]")
-            ok, bad = verify_refs(index["root"], data.get("refs", []))
+            ok, bad = verify_refs(index["root"], [clean_ref(r) for r in data.get("refs", [])])
             console.print(Panel(data["answer"], title=f"Q: {question}"))
             _show_refs(ok, bad)
             if ok and not bad:

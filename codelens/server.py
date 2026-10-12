@@ -13,7 +13,7 @@ from .model_client import DEFAULT_HOST, DEFAULT_MODEL, ModelError, chat_with_fal
 from .prompt_builder import build_ask_prompt, build_explain_prompt
 from .retriever import retrieve
 from .scanner import scan_repo
-from .verifier import verify_refs
+from .verifier import clean_ref, verify_refs
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -157,7 +157,7 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 system, user = build_ask_prompt(question, chunks)
                 data, used_model, fallback_notice = chat_with_fallback(model, system, user, DEFAULT_HOST)
-            ok, bad = verify_refs(index["root"], data.get("refs", []))
+            ok, bad = verify_refs(index["root"], [clean_ref(r) for r in data.get("refs", [])])
             resp = _render_answer(index["root"], data, ok, bad)
             resp["model"] = used_model
             for note in (availability_notice, fallback_notice):
