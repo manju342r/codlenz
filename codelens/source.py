@@ -98,39 +98,57 @@ def _explain_clone_failure(stderr: str, url: str) -> str:
     return f"Could not clone {url}: {name} ({detail})"
 
 
-@contextlib.contextmanager
-def _clone(url: str):
+def _run_clone(git: str, url: str, target: str) -> None:
+    """Shallow-clone url into target dir. Raises SourceError on any failure."""
+    try:
+        proc = subprocess.run(
+            [git, "clone", "--depth", str(config.CLONE_DEPTH), url, target],
+            capture_output=True, text=True, timeout=CLONE_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        raise SourceError(f"Clone timed out after {CLONE_TIMEOUT}s: {url}")
+    except OSError as e:
+        raise SourceError(f"Could not run Git: {e}")
+    if proc.returncode != 0:
+        raise SourceError(_explain_clone_failure(proc.stderr, url))
+
+
+def _require_git() -> str:
     git = shutil.which("git")
     if not git:
         raise SourceError("Git is not installed. Install Git to scan remote repositories.")
+    return git
+
+
+@contextlib.contextmanager
+def _clone(url: str):
+    git = _require_git()
     with tempfile.TemporaryDirectory(prefix=config.TEMP_PREFIX) as td:
-        try:
-            proc = subprocess.run(
-                [git, "clone", "--depth", str(config.CLONE_DEPTH), url, td],
-                capture_output=True, text=True, timeout=CLONE_TIMEOUT,
-            )
-        except subprocess.TimeoutExpired:
-            raise SourceError(f"Clone timed out after {CLONE_TIMEOUT}s: {url}")
-        except OSError as e:
-            raise SourceError(f"Could not run Git: {e}")
-        if proc.returncode != 0:
-            raise SourceError(_explain_clone_failure(proc.stderr, url))
+        _run_clone(git, url, td)
         yield Path(td).resolve()
 
 
 @contextlib.contextmanager
-def resolve_source(raw: str):
-    """Yield a local directory for a path or Git URL input.
+def resolve_repository_source(raw: str):
+    """Yield (local Path, is_temporary) for a path or Git URL input.
 
-    Local directories pass through untouched. Remote URLs are shallow-cloned
-    into a temp dir that lives for the whole block and is always cleaned up.
+    Local paths are expanded, validated as directories, and yielded with
+    False — the caller's tree is never touched. Remote URLs are validated,
+    shallow-cloned into a tempfile.mkdtemp directory, and yielded with True;
+    the temp dir is removed in a finally block whether analysis succeeds,
+    fails, or aborts. Never use shell=True; credentials never reach errors.
     """
     s = (raw or "").strip()
     if is_git_url(s):
         if _has_embedded_credentials(s):
             raise SourceError("Refusing URL with embedded credentials. Use your Git credential helper instead.")
-        with _clone(s) as tmp:
-            yield tmp
+        git = _require_git()
+        target = tempfile.mkdtemp(prefix="codelens_repo_")
+        try:
+            _run_clone(git, s, target)
+            yield Path(target).resolve(), True
+        finally:
+            shutil.rmtree(target, ignore_errors=True)
         return
     if looks_like_url(s):
         raise SourceError(
@@ -139,6 +157,19 @@ def resolve_source(raw: str):
         )
     p = Path(s).expanduser() if s else Path("")
     if s and p.is_dir():
-        yield p.resolve()
+        yield p.resolve(), False
         return
     raise SourceError(f"No such directory: {raw}. Pass a local directory or a Git URL.")
+
+
+@contextlib.contextmanager
+def resolve_source(raw: str):
+    """Yield a local directory for a path or Git URL input.
+
+    Thin wrapper over resolve_repository_source for callers that only need
+    the path. Local directories pass through untouched. Remote URLs are
+    shallow-cloned into a temp dir that lives for the whole block and is
+    always cleaned up.
+    """
+    with resolve_repository_source(raw) as (path, _):
+        yield path

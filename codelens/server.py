@@ -14,6 +14,7 @@ from .model_client import DEFAULT_HOST, DEFAULT_MODEL, ModelError, chat_with_fal
 from .prompt_builder import build_ask_prompt, build_explain_prompt, enforce_bullets
 from .retriever import retrieve
 from .scanner import scan_repo
+from .source import SourceError, repo_name_from_url, resolve_repository_source
 from .verifier import clean_ref, verify_refs
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -35,16 +36,20 @@ def _repo_allowlist() -> list[Path] | None:
     return roots or None
 
 
-def _check_path(path: str) -> Path:
-    p = Path(path or "").expanduser()
-    if not p.is_dir():
-        raise ValueError(f"Not a directory: {path}")
-    resolved = p.resolve()
+def _enforce_allowlist(resolved: Path) -> None:
     allowlist = _repo_allowlist()
     if allowlist is not None and not any(
         resolved == root or root in resolved.parents for root in allowlist
     ):
         raise ValueError("Path is outside the allowed repository roots.")
+
+
+def _check_path(path: str) -> Path:
+    p = Path(path or "").expanduser()
+    if not p.is_dir():
+        raise ValueError(f"Not a directory: {path}")
+    resolved = p.resolve()
+    _enforce_allowlist(resolved)
     return resolved
 
 
@@ -139,11 +144,16 @@ class Handler(BaseHTTPRequestHandler):
             return
         if url.path == "/api/scan":
             try:
-                root = _check_path(parse_qs(url.query).get("path", [""])[0])
-                index = scan_repo(root)
+                raw = parse_qs(url.query).get("path", [""])[0]
+                with resolve_repository_source(raw) as (root, is_temp):
+                    if not is_temp:
+                        _enforce_allowlist(root)
+                    index = scan_repo(root)
+                    if is_temp:
+                        index["repo_name"] = repo_name_from_url(raw)
                 index.pop("limits", None)
                 self._send(index)
-            except (ValueError, FileNotFoundError, NotADirectoryError) as e:
+            except (ValueError, SourceError) as e:
                 self._send({"error": html.escape(str(e))}, 400)
             return
         self._send({"error": "not found"}, 404)
@@ -164,47 +174,47 @@ class Handler(BaseHTTPRequestHandler):
             self._send({"error": str(e)}, 413)
             return
         try:
-            root = _check_path(body.get("path", ""))
-            index = scan_repo(root)
-        except (ValueError, FileNotFoundError, NotADirectoryError) as e:
-            self._send({"error": str(e)}, 400)
-            return
-        model = body.get("model", DEFAULT_MODEL)
-        try:
-            model, availability_notice = resolve_model(model, DEFAULT_HOST)
+            model, availability_notice = resolve_model(body.get("model", DEFAULT_MODEL), DEFAULT_HOST)
         except ModelError as e:
             self._send({"error": str(e)}, 503)
             return
+        # One resolution only: the temp clone (if any) outlives scan + model work.
         try:
-            if url.path == "/api/analyze":
-                files = [m for m in index.get("manifests", [])[:3] if m in index["files"]]
-                for f in index["files"]:
-                    if len(files) >= 8:
-                        break
-                    if f.endswith((".py", ".js", ".ts", ".go", ".rs")) and f not in files:
-                        files.append(f)
-                contents = []
-                for rel in files:
-                    try:
-                        contents.append({"file": rel, "text": (root / rel).read_text(
-                            encoding="utf-8", errors="replace")[:config.SCAN_MAX_CHARS_PER_FILE]})
-                    except OSError:
-                        continue
-                system, user = build_explain_prompt(index, contents)
-                data, used_model, fallback_notice = chat_with_fallback(model, system, user, DEFAULT_HOST)
-                data["answer"] = enforce_bullets(data["answer"])
-            else:
-                question = (body.get("q") or body.get("question") or "").strip()
-                if not question:
-                    self._send({"error": "missing 'q' (question)"}, 400)
-                    return
-                chunks = retrieve(index, question)
-                if not chunks:
-                    self._send({"answer": "No relevant evidence found — will not invent an answer.",
-                                "verified": [], "rejected": [], "model": model})
-                    return
-                system, user = build_ask_prompt(question, chunks)
-                data, used_model, fallback_notice = chat_with_fallback(model, system, user, DEFAULT_HOST)
+            with resolve_repository_source(body.get("path", "")) as (root, is_temp):
+                if not is_temp:
+                    _enforce_allowlist(root)
+                index = scan_repo(root)
+                if is_temp:
+                    index["repo_name"] = repo_name_from_url(body.get("path", ""))
+                if url.path == "/api/analyze":
+                    files = [m for m in index.get("manifests", [])[:3] if m in index["files"]]
+                    for f in index["files"]:
+                        if len(files) >= 8:
+                            break
+                        if f.endswith((".py", ".js", ".ts", ".go", ".rs")) and f not in files:
+                            files.append(f)
+                    contents = []
+                    for rel in files:
+                        try:
+                            contents.append({"file": rel, "text": (root / rel).read_text(
+                                encoding="utf-8", errors="replace")[:config.SCAN_MAX_CHARS_PER_FILE]})
+                        except OSError:
+                            continue
+                    system, user = build_explain_prompt(index, contents)
+                    data, used_model, fallback_notice = chat_with_fallback(model, system, user, DEFAULT_HOST)
+                    data["answer"] = enforce_bullets(data["answer"])
+                else:
+                    question = (body.get("q") or body.get("question") or "").strip()
+                    if not question:
+                        self._send({"error": "missing 'q' (question)"}, 400)
+                        return
+                    chunks = retrieve(index, question)
+                    if not chunks:
+                        self._send({"answer": "No relevant evidence found — will not invent an answer.",
+                                    "verified": [], "rejected": [], "model": model})
+                        return
+                    system, user = build_ask_prompt(question, chunks)
+                    data, used_model, fallback_notice = chat_with_fallback(model, system, user, DEFAULT_HOST)
             ok, bad = verify_refs(index["root"], [clean_ref(r) for r in data.get("refs", [])])
             resp = _render_answer(index["root"], data, ok, bad)
             resp["model"] = used_model
@@ -212,6 +222,8 @@ class Handler(BaseHTTPRequestHandler):
                 if note:
                     resp.setdefault("notices", []).append(note)
             self._send(resp)
+        except (ValueError, SourceError) as e:
+            self._send({"error": str(e)}, 400)
         except ModelError as e:
             self._send({"error": str(e)}, 502)
 

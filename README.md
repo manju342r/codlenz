@@ -92,7 +92,7 @@ codelens ask https://github.com/username/repository "Where is escaping implement
 - Remote repos are shallow-cloned (`--depth 1`) into a temp dir that is deleted after the command, on success or failure. Your own local repositories are never touched.
 - Requires the Git CLI installed. Private repos work only through your existing Git credentials (SSH agent, credential helper) — CodeLens never takes tokens, and URLs with embedded credentials are refused.
 - For remote `analyze`, the report is saved as `./<repo>-codelens-analysis.md` in your current directory (the temp clone is deleted, so in-place saving would vanish).
-- Limitations: shallow clone, no submodules, 120s clone timeout. The demo server (`codelens serve`) stays local-path only.
+- Limitations: shallow clone, no submodules, 120s clone timeout. The demo server accepts the same paths and Git URLs; hosted deployments should set `CODELENS_REPO_ALLOWLIST` (ephemeral clones bypass it by design).
 
 ## Example output (real run, CodeLens analyzing itself)
 
