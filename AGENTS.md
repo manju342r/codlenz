@@ -16,10 +16,10 @@
 - `source.py` resolves CLI input (local dir or Git URL) to a local directory via `resolve_source()`. Remote URLs are shallow-cloned to temp dirs, always cleaned up. All commands use it — never add a second resolution path.
 - `retriever.py` is keyword scoring only (filename/def/import/content). Keep it that way.
 - `verifier.py` is the trust boundary: model refs are guilty until proven innocent. Display ✅ only from `verify_refs`; never render a model-cited file:line as fact.
-- `server.py` is stdlib-only (`http.server`), binds 127.0.0.1, read-only analysis. Keep zero web dependencies.
+- `server.py` is stdlib-only (`http.server`), binds 127.0.0.1, read-only analysis. Keep zero web dependencies. Env: `CORS_ORIGIN`, `CODELENS_REPO_ALLOWLIST`, `OLLAMA_HOST` (see `.env.example`); `_check_path` enforces the allowlist when set.
 
 ## Frontend
-- The demo page is `static/` (index.html, styles.css, app.js), served by `server.py`. For any UI polish, load the `impeccable` skill first and follow it.
+- The demo page is `codelens/static/` (index.html, styles.css, app.js), served by `server.py` and shipped as package data. For any UI polish, load the `impeccable` skill first and follow it.
 - Visual authority: `DESIGN.md` + `.impeccable/design.json` (generated from the built CSS — update both if tokens change). Product context: `PRODUCT.md`. Surface contract: `.impeccable/surfaces/static-index-html.md`.
 
 ## Verify (no test suite exists)

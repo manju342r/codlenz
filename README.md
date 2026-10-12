@@ -115,6 +115,57 @@ Note the `❌`: the model hallucinated a ref and Python caught it. That is the f
 - `skill/SKILL.md` documents invocation; formal Agent Skills Open Standard compliance is not audited here.
 - Analysis quality depends on the local model; 3B models suit small/medium repos.
 
+## Deployment
+
+Two targets: an installable CLI (PyPI) and a hosted web demo (static page + backend host).
+
+### CLI install
+
+```bash
+pipx install codelens        # isolated install (pipx)
+pip install codelens          # or plain pip
+codelens --help
+```
+
+Requires Python ≥3.10, Git (for URL scanning), and Ollama with `gemma3:4b`
+(`qwen2.5:3b` fallback). No API keys, no env vars required for local use.
+
+### Hosted web demo
+
+The page in `codelens/static/` is plain static files — host anywhere (Vercel included).
+Point it at a backend with `?backend=https://your-host` (persisted in localStorage);
+without a reachable backend it offers a canned demo sample. The Python server
+(`codelens serve`) is the backend: it needs an always-on host with Ollama,
+because Vercel serverless cannot run it (no persistent process, 10–60s limits
+vs 15–180s model calls, no localhost Ollama).
+
+```bash
+cp .env.example .env   # then set values
+CORS_ORIGIN=https://your-page.vercel.app \
+CODELENS_REPO_ALLOWLIST=/srv/repos \
+codelens serve --port 8000
+```
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `CORS_ORIGIN` | Exact page origin allowed to call the API | same-origin only |
+| `CODELENS_REPO_ALLOWLIST` | Comma-separated repo roots the API may scan | any local path |
+| `OLLAMA_HOST` | Ollama base URL (server-side only) | `http://localhost:11434` |
+
+Rules for the hosted backend: never accept raw visitor paths without the allowlist,
+never expose Ollama publicly, keep prompts and verification unchanged.
+
+### Deployment checklist
+
+- [ ] `pip install` clean-venv smoke test + `codelens --help/scan`
+- [ ] `.env` set on the backend host (never committed)
+- [ ] `CODELENS_REPO_ALLOWLIST` points at a pre-cloned corpus, not `/`
+- [ ] `CORS_ORIGIN` exactly matches the page origin
+- [ ] Backend reachable from the page (`?backend=`), canned fallback confirmed
+- [ ] No secrets in repo (`git log --all -S 'sk-'` or equivalent sweep)
+- [ ] PyPI name `codelens` re-checked at publish time; publish only on approval
+- [ ] Vercel deploy only the static page; never the Python server
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

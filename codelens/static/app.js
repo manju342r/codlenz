@@ -7,6 +7,44 @@ const chainEl = $("chainage");
 const chainText = $("chain-text");
 const surveyTime = $("survey-time");
 
+/* Backend selection: same origin by default; ?backend=https://host persists
+   to localStorage (used when this page is hosted statically, e.g. Vercel). */
+function apiBase() {
+  try {
+    const q = new URLSearchParams(location.search).get("backend");
+    if (q) {
+      localStorage.setItem("codelens-backend", q);
+      return q.replace(/\/$/, "");
+    }
+    return localStorage.getItem("codelens-backend") || "";
+  } catch (e) { return ""; }
+}
+const API = apiBase();
+
+const DEMO_SAMPLE = `## 1. PROJECT OVERVIEW
+- CodeLens helps developers understand unfamiliar codebases locally.
+- Scan, architectural briefing, and grounded Q&A with verified references.
+- Canned demo sample — not a live model run.
+## 2. TECHNOLOGY STACK
+- Python CLI (Click, Rich); zero-dependency web page.
+- Ollama + Gemma 3 4B primary, Qwen 2.5 3B fallback.
+## 3. ARCHITECTURE
+- CLI and demo server share one pipeline: scan, retrieve, prompt, verify.
+- Browser page calls same-origin /api/* endpoints.
+## 4. KEY COMPONENTS
+- scanner.py: pathlib repo index.
+- verifier.py: guilty-until-proven-innocent ref checker.
+## 5. EXECUTION FLOW
+- Path or Git URL resolves to a directory.
+- Scanner indexes, model explains, verifier checks each citation.
+## 6. AI AND MEMORY ARCHITECTURE
+- Stateless local inference; the prompt carries all context per call.
+## 7. IMPORTANT FINDINGS
+- CONFIRMED: no network calls leave the machine except localhost Ollama.
+- SUSPECTED: nothing in this sample — run a live survey for real findings.
+## 8. QUICK SUMMARY
+- Local-first code understanding with citations you can trust, verified line by line.`;
+
 let chainTimer = null;
 
 function esc(s) {
@@ -72,10 +110,17 @@ function setBusy(busy) {
   for (const id of ["btn-scan", "btn-analyze", "btn-ask"]) $(id).disabled = busy;
 }
 
-function showError(message) {
+function showError(message, demo) {
   Narrator.stop();
   document.getElementById("listen-bar").hidden = true;
-  resultEl.innerHTML = `<div class="error-state" role="alert"><strong>Survey failed.</strong><p>${esc(message)}</p></div>`;
+  resultEl.innerHTML = `<div class="error-state" role="alert"><strong>Survey failed.</strong><p>${esc(message)}</p>${
+    demo ? `<p><button type="button" id="btn-demo">Load canned demo sample</button></p>` : ""
+  }</div>`;
+  const b = document.getElementById("btn-demo");
+  if (b) b.addEventListener("click", () => {
+    resultEl.innerHTML = `<div class="answer-body"><p class="hint">Canned demo sample — connect a backend for live surveys.</p>${renderBody(DEMO_SAMPLE)}</div>`;
+    Narrator.refresh();
+  });
 }
 
 function durationBar(seconds) {
@@ -103,7 +148,7 @@ function wireFocusDimming() {
 }
 
 async function postJSON(url, payload) {
-  const r = await fetch(url, {
+  const r = await fetch(API + url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -119,7 +164,7 @@ async function runScan() {
   Narrator.stop();
   setBusy(true);
   try {
-    const r = await fetch(`/api/scan?path=${encodeURIComponent(path)}`);
+    const r = await fetch(`${API}/api/scan?path=${encodeURIComponent(path)}`);
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
     const rows = [
@@ -177,7 +222,7 @@ async function runModel(action) {
     data.elapsed_s = Math.round(((performance.now() - t0) / 1000) * 10) / 10;
     renderAnswer(data);
     surveyTime.textContent = `last survey ${data.elapsed_s}s · ${data.model || "unknown model"} · ${new Date().toLocaleTimeString()}`;
-  } catch (e) { stopChainage(); showError(e.message); } finally { setBusy(false); }
+  } catch (e) { stopChainage(); showError(e.message, true); } finally { setBusy(false); }
 }
 
 $("btn-scan").addEventListener("click", runScan);

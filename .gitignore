@@ -9,5 +9,6 @@ build/
 codelens-analysis.md
 .codelens_index.json
 .DS_Store
-
-.DS_Store
+.env
+.env.*
+!.env.example

@@ -4,7 +4,7 @@ from __future__ import annotations
 import html
 import json
 import mimetypes
-import time
+import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
@@ -15,13 +15,37 @@ from .retriever import retrieve
 from .scanner import scan_repo
 from .verifier import clean_ref, verify_refs
 
-STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+MAX_BODY_BYTES = 1_000_000
+# Bodies beyond this are rejected without draining (client sees a reset).
+# Anything smaller is fully drained so the client gets our clean 413.
+DISCARD_BUDGET = 8 * 1024 * 1024
+# Worst case is a model call (180s client timeout) plus overhead.
+SOCKET_TIMEOUT = 240
+
+
+def _cors_origin() -> str | None:
+    return os.environ.get("CORS_ORIGIN") or None
+
+
+def _repo_allowlist() -> list[Path] | None:
+    raw = os.environ.get("CODELENS_REPO_ALLOWLIST", "")
+    roots = [Path(p).expanduser().resolve() for p in raw.split(",") if p.strip()]
+    return roots or None
+
 
 def _check_path(path: str) -> Path:
     p = Path(path or "").expanduser()
     if not p.is_dir():
         raise ValueError(f"Not a directory: {path}")
-    return p.resolve()
+    resolved = p.resolve()
+    allowlist = _repo_allowlist()
+    if allowlist is not None and not any(
+        resolved == root or root in resolved.parents for root in allowlist
+    ):
+        raise ValueError("Path is outside the allowed repository roots.")
+    return resolved
 
 
 def _coord(ref: dict) -> str:
@@ -52,10 +76,19 @@ def _render_answer(repo_root: str, data: dict, ok: list, bad: list) -> dict:
 
 class Handler(BaseHTTPRequestHandler):
     server_version = "CodeLens/0.1.0"
+    timeout = SOCKET_TIMEOUT
+
+    def _cors_headers(self) -> None:
+        origin = _cors_origin()
+        if origin:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
     def _send(self, obj: object, status: int = 200):
         body = json.dumps(obj).encode()
         self.send_response(status)
+        self._cors_headers()
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
@@ -68,8 +101,13 @@ class Handler(BaseHTTPRequestHandler):
             n = 0
         if n <= 0:
             return {}
+        if n > DISCARD_BUDGET:
+            raise ValueError(f"Request body too large (limit {MAX_BODY_BYTES} bytes).")
+        raw = self.rfile.read(n)
+        if len(raw) > MAX_BODY_BYTES:
+            raise ValueError(f"Request body too large (limit {MAX_BODY_BYTES} bytes).")
         try:
-            return json.loads(self.rfile.read(n).decode("utf-8", errors="replace"))
+            return json.loads(raw.decode("utf-8", errors="replace"))
         except json.JSONDecodeError:
             return {}
 
@@ -110,12 +148,21 @@ class Handler(BaseHTTPRequestHandler):
             return
         self._send({"error": "not found"}, 404)
 
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self._cors_headers()
+        self.end_headers()
+
     def do_POST(self):
         url = urlparse(self.path)
         if url.path not in ("/api/analyze", "/api/ask"):
             self._send({"error": "not found"}, 404)
             return
-        body = self._body()
+        try:
+            body = self._body()
+        except ValueError as e:
+            self._send({"error": str(e)}, 413)
+            return
         try:
             root = _check_path(body.get("path", ""))
             index = scan_repo(root)

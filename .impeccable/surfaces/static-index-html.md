@@ -1,7 +1,7 @@
 ---
 version: 1
 slug: "static-index-html"
-primary_target: "static/index.html"
+primary_target: "codelens/static/index.html"
 related_targets: []
 ---
 

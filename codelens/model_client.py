@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import json
+import os
 import urllib.request
 import urllib.error
 
-DEFAULT_HOST = "http://localhost:11434"
+DEFAULT_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 DEFAULT_MODEL = "gemma3:4b"
 FALLBACK_MODEL = "qwen2.5:3b"
 

@@ -6,7 +6,18 @@ build-backend = "setuptools.build_meta"
 name = "codelens"
 version = "0.1.0"
 description = "Local-first codebase understanding with open-weight AI + verified references"
+readme = "README.md"
+license = { text = "MIT" }
 requires-python = ">=3.10"
+keywords = ["code-analysis", "ollama", "open-weight-models", "developer-tools"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Documentation",
+]
 dependencies = ["click>=8.0", "rich>=13.0"]
 
 [project.scripts]
@@ -14,3 +25,6 @@ codelens = "codelens.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["codelens*"]
+
+[tool.setuptools.package-data]
+codelens = ["static/*"]
