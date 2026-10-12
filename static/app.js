@@ -155,3 +155,22 @@ async function runModel(action) {
 $("btn-scan").addEventListener("click", runScan);
 $("btn-analyze").addEventListener("click", () => runModel("analyze"));
 $("btn-ask").addEventListener("click", () => runModel("ask"));
+
+(function theme() {
+  const btn = $("btn-theme");
+  const apply = (dark) => {
+    document.documentElement.dataset.theme = dark ? "dark" : "";
+    if (!dark) delete document.documentElement.dataset.theme;
+    btn.setAttribute("aria-pressed", String(dark));
+    btn.textContent = dark ? "Lights on" : "Lights out";
+    try { localStorage.setItem("codelens-theme", dark ? "dark" : "light"); } catch (e) {}
+  };
+  let dark = false;
+  try {
+    const saved = localStorage.getItem("codelens-theme");
+    dark = saved ? saved === "dark"
+      : window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  } catch (e) {}
+  apply(!!dark);
+  btn.addEventListener("click", () => apply(document.documentElement.dataset.theme !== "dark"));
+})();

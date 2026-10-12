@@ -110,6 +110,7 @@ Drafting-paper ground with iron ink; one flag orange for pins, chainage, and mar
 ### Named Rules
 **The Testimony Rule.** A color on screen must be doing a state, coordinate, or instrument job. If it is only pretty, it leaves.
 **The Ground Rule.** State colors appear only on their tinted grounds, never as bare text on paper.
+**The Night-Shift Rule.** The dark theme is the same plat after hours, not a second identity: identical rules, ticks, and badges on a dark ink ground (`--paper` #161e29), with every text pair recomputed to 4.5:1 or better. Toggle persists in `localStorage`, honors `prefers-color-scheme` on first visit, and flips via `data-theme` on the root — no new components, no new palette roles.
 
 ## Typography
 
@@ -173,7 +174,7 @@ No site navigation; single surface. Section order is the wayfinding.
 ### Do:
 - **Do** stake every model claim to a coordinate with its verification state attached.
 - **Do** render voids with reasons — a rejected reference is content, not an error.
-- **Do** keep all text pairs at 4.5:1 or better (verified pairs computed, not eyeballed).
+- **Do** keep all text pairs at 4.5:1 or better (verified pairs computed, not eyeballed) — in both themes.
 - **Do** escape all model text before rendering — answers are untrusted data.
 
 ### Don't:

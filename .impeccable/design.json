@@ -1,1 +1,252 @@
-{"breakpoints": [{"name": "narrow", "value": "720px"}], "components": [{"css": ".ds-btn-primary{background:#1c2530;color:#f5f1e6;border:1px solid #1c2530;border-radius:999px;padding:.55rem 1.15rem;font-weight:600;cursor:pointer}.ds-btn-primary:hover{background:#000}.ds-btn-primary:focus-visible{outline:2px solid #0f5fd0;outline-offset:2px}", "description": "The single primary action (Ask). Ink fill, paper text.", "html": "<button class=\"ds-btn-primary\">Ask</button>", "kind": "button", "name": "Primary Button", "refersTo": "button-primary"}, {"css": ".ds-btn-ghost{background:#f5f1e6;color:#1c2530;border:1px solid #1c2530;border-radius:999px;padding:.55rem 1.15rem;font-weight:600;cursor:pointer}.ds-btn-ghost:hover{background:#ece5d3}.ds-btn-ghost:focus-visible{outline:2px solid #0f5fd0;outline-offset:2px}", "description": "Secondary instruments (Scan, Analyze).", "html": "<button class=\"ds-btn-ghost\">Scan</button>", "kind": "button", "name": "Ghost Button", "refersTo": "button-ghost"}, {"css": ".ds-input{background:#fff;color:#1c2530;border:1px solid #1c2530;border-radius:8px;padding:.55rem .7rem;font-size:.95rem;width:100%}.ds-input:focus-visible{outline:2px solid #0f5fd0;outline-offset:2px}", "description": "Repository path and question fields with uppercase labels.", "html": "<label class=\"ds-label\">Repository path<input class=\"ds-input\" value=\"/path/to/repo\"></label>", "kind": "input", "name": "Text Field", "refersTo": "input-field"}, {"css": ".ds-ref-ok{background:#e3ecdd;border:1px solid #1c2530;border-radius:12px;padding:.65rem .9rem;color:#1c2530}.ds-ref-ok .ds-coord{font-family:ui-monospace,Menlo,monospace;color:#1b6b3c}", "description": "A verified coordinate: green ground, pin badge, mono file:line.", "html": "<div class=\"ds-ref-ok\"><span class=\"ds-coord\">codelens/verifier.py:4-35</span> verified monument</div>", "kind": "custom", "name": "Verified Monument", "refersTo": "ref-verified"}, {"css": ".ds-ref-bad{background:#f3e2da;border:1px solid #1c2530;border-radius:12px;padding:.65rem .9rem;color:#1c2530}.ds-ref-bad .ds-why{color:#b3362b}", "description": "A rejected coordinate with its reason. Never hidden.", "html": "<div class=\"ds-ref-bad\"><span>codelens/cli.py:42-65</span> <span class=\"ds-why\">quote not found — void</span></div>", "kind": "custom", "name": "Void Stamp", "refersTo": "ref-rejected"}, {"css": ".ds-tag{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:#8f3a12;border:1px dashed #b34a1b;border-radius:999px;padding:.4rem .8rem}", "description": "Local-model provenance pill. States the offline guarantee.", "html": "<span class=\"ds-tag\">qwen2.5:3b · localhost</span>", "kind": "chip", "name": "Model Tag", "refersTo": "button-ghost"}], "extensions": {"breakpoints": [{"name": "narrow", "value": "720px"}], "colorMeta": {"flag-orange": {"canonical": "#b34a1b", "displayName": "Flag Orange", "role": "primary", "tonalRamp": ["#5a2409", "#75300e", "#8f3a12", "#b34a1b", "#c96a35", "#dd8a55", "#eeb287", "#f8d9bd"]}, "inferred": {"canonical": "#8a5f14", "displayName": "Inferred Amber", "role": "tertiary", "tonalRamp": ["#453006", "#5c400a", "#8a5f14", "#a37c22", "#bfa04e", "#d4bd7d", "#e6d7a8", "#f5edd2"]}, "ink": {"canonical": "#1c2530", "displayName": "Iron Ink", "role": "secondary", "tonalRamp": ["#0b0f14", "#1c2530", "#33404f", "#425062", "#68758a", "#97a1b1", "#c3c9d4", "#e9ebef"]}, "paper": {"canonical": "#f5f1e6", "displayName": "Drafting Paper", "role": "neutral", "tonalRamp": ["#d9d0b8", "#e4dcc6", "#ece5d3", "#f5f1e6", "#f8f5ec", "#fbf9f2", "#fdfcf7", "#ffffff"]}, "verified": {"canonical": "#1b6b3c", "displayName": "Verified Green", "role": "tertiary", "tonalRamp": ["#0d361e", "#1b6b3c", "#2c8a4f", "#4aa564", "#74bd85", "#a2d2ae", "#c9e5d1", "#e3ecdd"]}, "void": {"canonical": "#b3362b", "displayName": "Void Red", "role": "tertiary", "tonalRamp": ["#591b15", "#75251d", "#b3362b", "#c65a4c", "#d67f70", "#e4a297", "#efc4bb", "#f3e2da"]}}, "motion": [{"name": "chain-ticks", "purpose": "Honest wait readout: animated tick strip plus real elapsed timer. Disabled under prefers-reduced-motion.", "value": "chain 1.1s linear infinite"}], "shadows": [{"name": "pinned-sheet", "purpose": "The one elevated surface: the result sheet.", "value": "8px 8px 0 rgba(28,37,48,0.12)"}], "typographyMeta": {"display": {"displayName": "System grotesk, worked hard", "purpose": "Title only; character from weight and measure, not the face."}, "label": {"displayName": "Uppercase label", "purpose": "Field labels, sheet marks, table headers. Only home of wide tracking."}, "mono": {"displayName": "System mono", "purpose": "Coordinates, code, paths, timers. Measurement only, never costume."}}}, "generatedAt": "2026-10-12T12:30:00+05:30", "narrative": {"dos": ["Do stake every model claim to a coordinate with its verification state attached.", "Do render voids with reasons.", "Do keep all text pairs at 4.5:1 or better.", "Do escape all model text before rendering."], "donts": ["Don't add a chat window, kickers, section numbers, gradient text, or colored left borders.", "Don't use orange as body text.", "Don't invent refs, timings, or file contents.", "Don't add web dependencies, hosted fonts, or CDN assets."], "keyCharacteristics": ["Ruled and restrained: flat 1px ink borders, one soft shadow for the result sheet.", "Coordinates are the interface: mono file:line callouts with margin keys.", "Failure is first-class: voids and INFERRED verdicts are designed states."], "northStar": "The Surveyor's Plat", "overview": "A measured drawing of a live analysis. The page behaves like a survey sheet where every model claim is staked to file:line coordinates. Color testifies rather than decorates; the single authored motion is an honest chainage tally.", "rules": [{"body": "A color on screen must be doing a state, coordinate, or instrument job.", "name": "The Testimony Rule", "section": "colors"}, {"body": "State colors appear only on their tinted grounds, never as bare text on paper.", "name": "The Ground Rule", "section": "colors"}, {"body": "Every number a user compares sets in tabular numerals.", "name": "The Tabular Rule", "section": "typography"}, {"body": "Only the result sheet casts.", "name": "The One Shadow Rule", "section": "elevation"}]}, "schemaVersion": 2, "title": "Design System: CodeLens demo page"}
+{
+  "breakpoints": [
+    {
+      "name": "narrow",
+      "value": "720px"
+    }
+  ],
+  "components": [
+    {
+      "css": ".ds-btn-primary{background:#1c2530;color:#f5f1e6;border:1px solid #1c2530;border-radius:999px;padding:.55rem 1.15rem;font-weight:600;cursor:pointer}.ds-btn-primary:hover{background:#000}.ds-btn-primary:focus-visible{outline:2px solid #0f5fd0;outline-offset:2px}",
+      "description": "The single primary action (Ask). Ink fill, paper text.",
+      "html": "<button class=\"ds-btn-primary\">Ask</button>",
+      "kind": "button",
+      "name": "Primary Button",
+      "refersTo": "button-primary"
+    },
+    {
+      "css": ".ds-btn-ghost{background:#f5f1e6;color:#1c2530;border:1px solid #1c2530;border-radius:999px;padding:.55rem 1.15rem;font-weight:600;cursor:pointer}.ds-btn-ghost:hover{background:#ece5d3}.ds-btn-ghost:focus-visible{outline:2px solid #0f5fd0;outline-offset:2px}",
+      "description": "Secondary instruments (Scan, Analyze).",
+      "html": "<button class=\"ds-btn-ghost\">Scan</button>",
+      "kind": "button",
+      "name": "Ghost Button",
+      "refersTo": "button-ghost"
+    },
+    {
+      "css": ".ds-input{background:#fff;color:#1c2530;border:1px solid #1c2530;border-radius:8px;padding:.55rem .7rem;font-size:.95rem;width:100%}.ds-input:focus-visible{outline:2px solid #0f5fd0;outline-offset:2px}",
+      "description": "Repository path and question fields with uppercase labels.",
+      "html": "<label class=\"ds-label\">Repository path<input class=\"ds-input\" value=\"/path/to/repo\"></label>",
+      "kind": "input",
+      "name": "Text Field",
+      "refersTo": "input-field"
+    },
+    {
+      "css": ".ds-ref-ok{background:#e3ecdd;border:1px solid #1c2530;border-radius:12px;padding:.65rem .9rem;color:#1c2530}.ds-ref-ok .ds-coord{font-family:ui-monospace,Menlo,monospace;color:#1b6b3c}",
+      "description": "A verified coordinate: green ground, pin badge, mono file:line.",
+      "html": "<div class=\"ds-ref-ok\"><span class=\"ds-coord\">codelens/verifier.py:4-35</span> verified monument</div>",
+      "kind": "custom",
+      "name": "Verified Monument",
+      "refersTo": "ref-verified"
+    },
+    {
+      "css": ".ds-ref-bad{background:#f3e2da;border:1px solid #1c2530;border-radius:12px;padding:.65rem .9rem;color:#1c2530}.ds-ref-bad .ds-why{color:#b3362b}",
+      "description": "A rejected coordinate with its reason. Never hidden.",
+      "html": "<div class=\"ds-ref-bad\"><span>codelens/cli.py:42-65</span> <span class=\"ds-why\">quote not found \u2014 void</span></div>",
+      "kind": "custom",
+      "name": "Void Stamp",
+      "refersTo": "ref-rejected"
+    },
+    {
+      "css": ".ds-tag{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:#8f3a12;border:1px dashed #b34a1b;border-radius:999px;padding:.4rem .8rem}",
+      "description": "Local-model provenance pill. States the offline guarantee.",
+      "html": "<span class=\"ds-tag\">qwen2.5:3b \u00b7 localhost</span>",
+      "kind": "chip",
+      "name": "Model Tag",
+      "refersTo": "button-ghost"
+    }
+  ],
+  "extensions": {
+    "breakpoints": [
+      {
+        "name": "narrow",
+        "value": "720px"
+      }
+    ],
+    "colorMeta": {
+      "flag-orange": {
+        "canonical": "#b34a1b",
+        "displayName": "Flag Orange",
+        "role": "primary",
+        "tonalRamp": [
+          "#5a2409",
+          "#75300e",
+          "#8f3a12",
+          "#b34a1b",
+          "#c96a35",
+          "#dd8a55",
+          "#eeb287",
+          "#f8d9bd"
+        ]
+      },
+      "inferred": {
+        "canonical": "#8a5f14",
+        "displayName": "Inferred Amber",
+        "role": "tertiary",
+        "tonalRamp": [
+          "#453006",
+          "#5c400a",
+          "#8a5f14",
+          "#a37c22",
+          "#bfa04e",
+          "#d4bd7d",
+          "#e6d7a8",
+          "#f5edd2"
+        ]
+      },
+      "ink": {
+        "canonical": "#1c2530",
+        "displayName": "Iron Ink",
+        "role": "secondary",
+        "tonalRamp": [
+          "#0b0f14",
+          "#1c2530",
+          "#33404f",
+          "#425062",
+          "#68758a",
+          "#97a1b1",
+          "#c3c9d4",
+          "#e9ebef"
+        ]
+      },
+      "paper": {
+        "canonical": "#f5f1e6",
+        "displayName": "Drafting Paper",
+        "role": "neutral",
+        "tonalRamp": [
+          "#d9d0b8",
+          "#e4dcc6",
+          "#ece5d3",
+          "#f5f1e6",
+          "#f8f5ec",
+          "#fbf9f2",
+          "#fdfcf7",
+          "#ffffff"
+        ]
+      },
+      "verified": {
+        "canonical": "#1b6b3c",
+        "displayName": "Verified Green",
+        "role": "tertiary",
+        "tonalRamp": [
+          "#0d361e",
+          "#1b6b3c",
+          "#2c8a4f",
+          "#4aa564",
+          "#74bd85",
+          "#a2d2ae",
+          "#c9e5d1",
+          "#e3ecdd"
+        ]
+      },
+      "void": {
+        "canonical": "#b3362b",
+        "displayName": "Void Red",
+        "role": "tertiary",
+        "tonalRamp": [
+          "#591b15",
+          "#75251d",
+          "#b3362b",
+          "#c65a4c",
+          "#d67f70",
+          "#e4a297",
+          "#efc4bb",
+          "#f3e2da"
+        ]
+      }
+    },
+    "motion": [
+      {
+        "name": "chain-ticks",
+        "purpose": "Honest wait readout: animated tick strip plus real elapsed timer. Disabled under prefers-reduced-motion.",
+        "value": "chain 1.1s linear infinite"
+      }
+    ],
+    "shadows": [
+      {
+        "name": "pinned-sheet",
+        "purpose": "The one elevated surface: the result sheet.",
+        "value": "8px 8px 0 rgba(28,37,48,0.12)"
+      }
+    ],
+    "typographyMeta": {
+      "display": {
+        "displayName": "System grotesk, worked hard",
+        "purpose": "Title only; character from weight and measure, not the face."
+      },
+      "label": {
+        "displayName": "Uppercase label",
+        "purpose": "Field labels, sheet marks, table headers. Only home of wide tracking."
+      },
+      "mono": {
+        "displayName": "System mono",
+        "purpose": "Coordinates, code, paths, timers. Measurement only, never costume."
+      }
+    },
+    "themes": [
+      {
+        "name": "night-shift",
+        "selector": "[data-theme=dark]",
+        "purpose": "Same plat after hours. Remaps paper/ink/grounds/state colors; all pairs recomputed to 4.5:1+. Toggle persists in localStorage, honors prefers-color-scheme first visit.",
+        "tokens": {
+          "--paper": "#161e29",
+          "--ink": "#ece4d2",
+          "--accent": "#e08a4e",
+          "--ok": "#7cc79a",
+          "--bad": "#e88d80",
+          "--focus": "#7fb3ff"
+        }
+      }
+    ]
+  },
+  "generatedAt": "2026-10-12T12:30:00+05:30",
+  "narrative": {
+    "dos": [
+      "Do stake every model claim to a coordinate with its verification state attached.",
+      "Do render voids with reasons.",
+      "Do keep all text pairs at 4.5:1 or better.",
+      "Do escape all model text before rendering."
+    ],
+    "donts": [
+      "Don't add a chat window, kickers, section numbers, gradient text, or colored left borders.",
+      "Don't use orange as body text.",
+      "Don't invent refs, timings, or file contents.",
+      "Don't add web dependencies, hosted fonts, or CDN assets."
+    ],
+    "keyCharacteristics": [
+      "Ruled and restrained: flat 1px ink borders, one soft shadow for the result sheet.",
+      "Coordinates are the interface: mono file:line callouts with margin keys.",
+      "Failure is first-class: voids and INFERRED verdicts are designed states."
+    ],
+    "northStar": "The Surveyor's Plat",
+    "overview": "A measured drawing of a live analysis. The page behaves like a survey sheet where every model claim is staked to file:line coordinates. Color testifies rather than decorates; the single authored motion is an honest chainage tally.",
+    "rules": [
+      {
+        "body": "A color on screen must be doing a state, coordinate, or instrument job.",
+        "name": "The Testimony Rule",
+        "section": "colors"
+      },
+      {
+        "body": "State colors appear only on their tinted grounds, never as bare text on paper.",
+        "name": "The Ground Rule",
+        "section": "colors"
+      },
+      {
+        "body": "Every number a user compares sets in tabular numerals.",
+        "name": "The Tabular Rule",
+        "section": "typography"
+      },
+      {
+        "body": "Only the result sheet casts.",
+        "name": "The One Shadow Rule",
+        "section": "elevation"
+      },
+      {
+        "name": "The Night-Shift Rule",
+        "body": "The dark theme is the same plat after hours: identical rules and badges on a dark ink ground, every pair recomputed to 4.5:1+.",
+        "section": "colors"
+      }
+    ]
+  },
+  "schemaVersion": 2,
+  "title": "Design System: CodeLens demo page"
+}

@@ -15,6 +15,30 @@
   --warn-ground: #f0e6c8;
   --focus: #0f5fd0;
   --radius: 12px;
+  --surface: #ffffff;
+  --inset: rgba(255, 255, 255, 0.6);
+  --shadow: 8px 8px 0 rgba(28, 37, 48, 0.12);
+}
+
+[data-theme="dark"] {
+  --paper: #161e29;
+  --paper-deep: #1f2a38;
+  --ink: #ece4d2;
+  --ink-soft: #b7c0cd;
+  --rule: #5b6b7f;
+  --grid: rgba(236, 228, 210, 0.08);
+  --accent: #e08a4e;
+  --accent-ink: #f0a76a;
+  --ok: #7cc79a;
+  --ok-ground: #1c3a28;
+  --bad: #e88d80;
+  --bad-ground: #43211c;
+  --warn: #d3a94f;
+  --warn-ground: #3a2f16;
+  --focus: #7fb3ff;
+  --surface: #222d3c;
+  --inset: rgba(0, 0, 0, 0.28);
+  --shadow: 8px 8px 0 rgba(0, 0, 0, 0.45);
 }
 
 * { box-sizing: border-box; }
@@ -35,7 +59,7 @@ body {
   line-height: 1.55;
 }
 
-::selection { background: var(--accent); color: #fff; }
+::selection { background: var(--ink); color: var(--paper); }
 
 :focus-visible {
   outline: 2px solid var(--focus);
@@ -117,7 +141,7 @@ h1 {
   font-size: 0.95rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   color: var(--ink);
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--rule);
   border-radius: 8px;
 }
@@ -194,7 +218,7 @@ button:disabled {
   margin-top: 1.25rem;
   border: 1px solid var(--rule);
   background: var(--paper);
-  box-shadow: 8px 8px 0 rgba(28, 37, 48, 0.12);
+  box-shadow: var(--shadow);
   padding: 1.5rem;
   min-height: 220px;
 }
@@ -258,7 +282,7 @@ button:disabled {
   border-radius: var(--radius);
   margin-bottom: 0.7rem;
   overflow: hidden;
-  background: #fff;
+  background: var(--surface);
 }
 
 .ref summary {
@@ -315,7 +339,7 @@ button:disabled {
   font-size: 0.82rem;
   line-height: 1.5;
   overflow-x: auto;
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--inset);
 }
 
 /* Focus swell: open evidence dims its siblings */
