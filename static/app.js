@@ -73,6 +73,8 @@ function setBusy(busy) {
 }
 
 function showError(message) {
+  Narrator.stop();
+  document.getElementById("listen-bar").hidden = true;
   resultEl.innerHTML = `<div class="error-state" role="alert"><strong>Survey failed.</strong><p>${esc(message)}</p></div>`;
 }
 
@@ -114,6 +116,7 @@ async function postJSON(url, payload) {
 async function runScan() {
   const path = $("path").value.trim();
   if (!path) { showError("Enter a repository path first."); return; }
+  Narrator.stop();
   setBusy(true);
   try {
     const r = await fetch(`/api/scan?path=${encodeURIComponent(path)}`);
@@ -156,6 +159,7 @@ function renderAnswer(data) {
   }
   resultEl.innerHTML = h + "</div>" + (data.elapsed_s != null ? durationBar(data.elapsed_s) : "");
   wireFocusDimming();
+  Narrator.refresh();
 }
 
 async function runModel(action) {
@@ -163,6 +167,7 @@ async function runModel(action) {
   if (!path) { showError("Enter a repository path first."); return; }
   const q = $("q").value.trim();
   if (action === "ask" && !q) { showError("Enter a question first."); return; }
+  Narrator.stop();
   setBusy(true);
   const t0 = startChainage(action === "analyze" ? "Analyzing" : "Asking the local model");
   try {
@@ -178,6 +183,188 @@ async function runModel(action) {
 $("btn-scan").addEventListener("click", runScan);
 $("btn-analyze").addEventListener("click", () => runModel("analyze"));
 $("btn-ask").addEventListener("click", () => runModel("ask"));
+
+/* Listen to Summary: narrates the verified answer text with speechSynthesis.
+   No new content is generated — bullets are read in order, markdown stripped. */
+function sayable(s) {
+  return String(s)
+    .replace(/✅/g, "verified")
+    .replace(/❌/g, "rejected")
+    .replace(/⚠️?/g, "warning")
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}]/gu, "")
+    .replace(/`{1,3}/g, "")
+    .replace(/\*\*?/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/([A-Za-z0-9_./-]+\.[A-Za-z0-9]+):(\d+)[–-](\d+)/g, "$1, lines $2 to $3")
+    .replace(/([A-Za-z0-9_./-]+\.[A-Za-z0-9]+):(\d+)/g, "$1, line $2")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function sectionIntro(title) {
+  const m = title.match(/^(\d+)\.\s*(.*)$/);
+  return m ? `Section ${m[1]}: ${m[2]}.` : `${title}.`;
+}
+
+const Narrator = (() => {
+  const supported = "speechSynthesis" in window;
+  let queue = [];   // [{sec, li, text}]
+  let qi = 0, playing = false;
+  let sections = []; // [{title, items: [li elements]}]
+  let statusEl = null, secSelect = null;
+
+  function collect() {
+    sections = [];
+    const heads = [...document.querySelectorAll("#result .answer-body h3")];
+    if (!heads.length) {
+      const items = [...document.querySelectorAll("#result .answer-body ul.brief > li")];
+      if (items.length) sections = [{ title: "Answer", head: null, items }];
+      return;
+    }
+    for (const h of heads) {
+      const items = [];
+      let el = h.nextElementSibling;
+      while (el && el.tagName !== "H3") {
+        if (el.tagName === "UL") items.push(...el.querySelectorAll(":scope > li"));
+        el = el.nextElementSibling;
+      }
+      sections.push({ title: h.textContent.trim(), head: h, items });
+    }
+  }
+
+  function clearMarks() {
+    document.querySelectorAll("#result .narrating").forEach((el) => el.classList.remove("narrating"));
+  }
+
+  function setStatus(s) { if (statusEl) statusEl.textContent = s; }
+
+  function mark(sec, idx) {
+    clearMarks();
+    const S = sections[sec];
+    if (!S) return;
+    if (S.head) S.head.classList.add("narrating");
+    const li = S.items[idx];
+    if (li) {
+      li.classList.add("narrating");
+      li.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+    setStatus(`Narrating: ${S.title} — bullet ${idx + 1} of ${S.items.length}`);
+  }
+
+  function utter(text, onend) {
+    const u = new SpeechSynthesisUtterance(text);
+    const vs = document.getElementById("narr-voice");
+    if (vs && vs.value) {
+      const v = speechSynthesis.getVoices().find((x) => x.name === vs.value);
+      if (v) u.voice = v;
+    }
+    const rs = document.getElementById("narr-rate");
+    u.rate = rs ? parseFloat(rs.value) : 1;
+    u.onend = onend;
+    u.onerror = onend;
+    speechSynthesis.speak(u);
+  }
+
+  function step() {
+    if (!playing || qi >= queue.length) { finish(true); return; }
+    const { sec, idx, text } = queue[qi];
+    mark(sec, idx);
+    utter(text, () => { qi += 1; step(); });
+  }
+
+  function buildQueue(secFilter) {
+    queue = [];
+    sections.forEach((S, si) => {
+      if (secFilter != null && si !== secFilter) return;
+      S.items.forEach((li, ii) => {
+        const t = sayable(li.textContent);
+        if (t) queue.push({ sec: si, idx: ii, text: t });
+      });
+    });
+  }
+
+  function playQueue(label) {
+    if (!queue.length) return;
+    speechSynthesis.cancel();
+    playing = true;
+    qi = 0;
+    if (label) setStatus(label);
+    step();
+  }
+
+  function finish(done) {
+    playing = false;
+    if (done) { clearMarks(); setStatus(sections.length ? "Finished." : ""); }
+  }
+
+  return {
+    refresh() {
+      const bar = document.getElementById("listen-bar");
+      if (!supported) { bar.hidden = true; return; }
+      collect();
+      if (!sections.length || !sections.some((S) => S.items.length)) { bar.hidden = true; return; }
+      bar.hidden = false;
+      bar.innerHTML = `<div class="listen-bar" role="group" aria-label="Listen to Summary">
+        <h2>Listen to Summary</h2>
+        <div class="listen-controls">
+          <button type="button" data-act="all">Play all</button>
+          <button type="button" data-act="pause">Pause</button>
+          <button type="button" data-act="resume">Resume</button>
+          <button type="button" data-act="stop">Stop</button>
+          <label>Section <select id="narr-sec" aria-label="Choose section"></select></label>
+          <button type="button" data-act="sec">Play section</button>
+          <label>Voice <select id="narr-voice" aria-label="Choose voice"></select></label>
+          <label>Speed <select id="narr-rate" aria-label="Playback speed">
+            <option value="0.75">0.75x</option><option value="1" selected>1x</option>
+            <option value="1.25">1.25x</option><option value="1.5">1.5x</option>
+          </select></label>
+        </div>
+        <div class="listen-status" id="narr-status" role="status"></div>
+      </div>`;
+      statusEl = document.getElementById("narr-status");
+      secSelect = document.getElementById("narr-sec");
+      sections.forEach((S, i) => {
+        const o = document.createElement("option");
+        o.value = i;
+        o.textContent = `${S.title} (${S.items.length})`;
+        secSelect.appendChild(o);
+      });
+      const fillVoices = () => {
+        const sel = document.getElementById("narr-voice");
+        if (!sel || sel.options.length) return;
+        speechSynthesis.getVoices().forEach((v) => {
+          const o = document.createElement("option");
+          o.value = v.name;
+          o.textContent = `${v.name} (${v.lang})`;
+          if (v.default) o.selected = true;
+          sel.appendChild(o);
+        });
+      };
+      fillVoices();
+      if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = fillVoices;
+      setStatus(`Ready — ${sections.length} section${sections.length > 1 ? "s" : ""}.`);
+      bar.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => this.act(b.dataset.act)));
+    },
+    act(which) {
+      if (!supported) return;
+      if (which === "all") { buildQueue(null); playQueue("Playing full summary…"); }
+      else if (which === "sec" && secSelect) {
+        const i = parseInt(secSelect.value, 10);
+        buildQueue(i);
+        playQueue(`Playing: ${sections[i] ? sections[i].title : ""}`);
+      }
+      else if (which === "pause") { speechSynthesis.pause(); setStatus("Paused."); }
+      else if (which === "resume") { speechSynthesis.resume(); }
+      else if (which === "stop") { speechSynthesis.cancel(); finish(false); clearMarks(); setStatus("Stopped."); }
+    },
+    stop() {
+      if (!supported) return;
+      speechSynthesis.cancel();
+      playing = false;
+      clearMarks();
+    },
+  };
+})();
 
 (function theme() {
   const btn = $("btn-theme");
