@@ -9,6 +9,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from . import config
 from .model_client import DEFAULT_HOST, DEFAULT_MODEL, ModelError, chat_with_fallback, resolve_model
 from .prompt_builder import build_ask_prompt, build_explain_prompt, enforce_bullets
 from .retriever import retrieve
@@ -84,7 +85,7 @@ def _show_refs(ok: list[dict], bad: list[dict]) -> None:
 
 
 @click.group()
-@click.version_option("0.1.0")
+@click.version_option(config.APP_VERSION)
 def main():
     """CodeLens — local-first codebase understanding with verified references."""
 
@@ -148,9 +149,9 @@ def analyze(source, model, host):
             data["answer"] = enforce_bullets(data["answer"])
             ok, bad = verify_refs(index["root"], [clean_ref(r) for r in data.get("refs", [])])
             if is_git_url(source):
-                out_path = Path.cwd() / f"{repo_name_from_url(source)}-codelens-analysis.md"
+                out_path = Path.cwd() / f"{repo_name_from_url(source)}{config.ANALYSIS_SUFFIX}"
             else:
-                out_path = Path(index["root"]) / "codelens-analysis.md"
+                out_path = Path(index["root"]) / config.ANALYSIS_FILENAME
             md = [f"# CodeLens analysis: {index['repo_name']}\n", data["answer"], "\n## Verified references\n"]
             for r in ok:
                 ref = r["ref"]
@@ -219,14 +220,14 @@ def ask(source, question, model, host):
 
 
 @main.command()
-@click.option("--port", default=8000, show_default=True, help="Local port (127.0.0.1 only).")
+@click.option("--port", default=config.SERVE_PORT, show_default=True, help="Local serve port.")
 def serve(port):
     """Start the local demo server (browser UI + JSON API)."""
     from .server import run
 
-    console.print(f"[green]CodeLens demo at http://127.0.0.1:{port}[/green]")
+    console.print(f"[green]CodeLens demo at http://{config.SERVE_HOST}:{port}[/green]")
     try:
         run(port)
     except OSError as e:
-        console.print(f"[red]Error: cannot bind 127.0.0.1:{port} ({e}). Try --port 8001.[/red]")
+        console.print(f"[red]Error: cannot bind {config.SERVE_HOST}:{port} ({e}). Try --port {port + 1}.[/red]")
         raise SystemExit(1)

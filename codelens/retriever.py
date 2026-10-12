@@ -4,6 +4,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from . import config
+
 TOKEN_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]{2,}")
 DEF_RE = re.compile(r"^\s*(def|class|function|func|const|let|var|fn|func)\s+([A-Za-z_][A-Za-z0-9_]*)", re.M)
 
@@ -12,7 +14,8 @@ def _tokens(text: str) -> set[str]:
     return {t.lower() for t in TOKEN_RE.findall(text)}
 
 
-def retrieve(index: dict, question: str, top_k: int = 5, max_chars: int = 4000) -> list[dict]:
+def retrieve(index: dict, question: str, top_k: int = config.RETRIEVE_TOP_K,
+             max_chars: int = config.RETRIEVE_MAX_CHARS) -> list[dict]:
     root = Path(index["root"])
     qtoks = _tokens(question)
     if not qtoks:

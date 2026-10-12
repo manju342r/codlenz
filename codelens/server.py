@@ -1,13 +1,14 @@
-"""Local demo server for CodeLens. Stdlib only. Binds 127.0.0.1, read-only analysis."""
+"""Local demo server for CodeLens. Stdlib only. Loopback-only, read-only analysis."""
 from __future__ import annotations
 
 import html
 import json
 import mimetypes
-import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
+
+from . import config
 
 from .model_client import DEFAULT_HOST, DEFAULT_MODEL, ModelError, chat_with_fallback, resolve_model
 from .prompt_builder import build_ask_prompt, build_explain_prompt, enforce_bullets
@@ -17,21 +18,20 @@ from .verifier import clean_ref, verify_refs
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
-MAX_BODY_BYTES = 1_000_000
+MAX_BODY_BYTES = config.MAX_BODY_BYTES
 # Bodies beyond this are rejected without draining (client sees a reset).
 # Anything smaller is fully drained so the client gets our clean 413.
-DISCARD_BUDGET = 8 * 1024 * 1024
-# Worst case is a model call (180s client timeout) plus overhead.
-SOCKET_TIMEOUT = 240
+DISCARD_BUDGET = config.DISCARD_BUDGET
+# Worst case is a model call (client timeout) plus overhead.
+SOCKET_TIMEOUT = config.SOCKET_TIMEOUT
 
 
 def _cors_origin() -> str | None:
-    return os.environ.get("CORS_ORIGIN") or None
+    return config.CORS_ORIGIN
 
 
 def _repo_allowlist() -> list[Path] | None:
-    raw = os.environ.get("CODELENS_REPO_ALLOWLIST", "")
-    roots = [Path(p).expanduser().resolve() for p in raw.split(",") if p.strip()]
+    roots = [Path(p).expanduser().resolve() for p in config.repo_allowlist()]
     return roots or None
 
 
@@ -52,14 +52,14 @@ def _coord(ref: dict) -> str:
     return f"{ref.get('file', '?')}:{ref.get('start', '?')}-{ref.get('end', '?')}"
 
 
-def _excerpt(repo_root: str, ref: dict, max_lines: int = 15) -> str:
+def _excerpt(repo_root: str, ref: dict, max_lines: int = config.EXCERPT_MAX_LINES) -> str:
     try:
         root = Path(repo_root).resolve()
         target = (root / str(ref.get("file", ""))).resolve()
         target.relative_to(root)
         lines = target.read_text(encoding="utf-8", errors="replace").splitlines()
         s, e = int(ref["start"]), int(ref["end"])
-        return "\n".join(l[:200] for l in lines[s - 1:min(e, s + max_lines - 1)])
+        return "\n".join(l[:config.EXCERPT_LINE_CHARS] for l in lines[s - 1:min(e, s + max_lines - 1)])
     except (ValueError, OSError, KeyError, IndexError):
         return ""
 
@@ -187,7 +187,7 @@ class Handler(BaseHTTPRequestHandler):
                 for rel in files:
                     try:
                         contents.append({"file": rel, "text": (root / rel).read_text(
-                            encoding="utf-8", errors="replace")[:4000]})
+                            encoding="utf-8", errors="replace")[:config.SCAN_MAX_CHARS_PER_FILE]})
                     except OSError:
                         continue
                 system, user = build_explain_prompt(index, contents)
@@ -219,7 +219,7 @@ class Handler(BaseHTTPRequestHandler):
         pass  # quiet
 
 
-def run(port: int = 8000) -> None:
-    srv = ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    print(f"CodeLens demo at http://127.0.0.1:{port} (Ctrl+C to stop)")
+def run(port: int = config.SERVE_PORT) -> None:
+    srv = ThreadingHTTPServer((config.SERVE_HOST, port), Handler)
+    print(f"CodeLens demo at http://{config.SERVE_HOST}:{port} (Ctrl+C to stop)")
     srv.serve_forever()

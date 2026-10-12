@@ -2,20 +2,21 @@
 from __future__ import annotations
 
 import json
-import os
 import urllib.request
 import urllib.error
 
-DEFAULT_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-DEFAULT_MODEL = "gemma3:4b"
-FALLBACK_MODEL = "qwen2.5:3b"
+from . import config
+
+DEFAULT_HOST = config.OLLAMA_HOST
+DEFAULT_MODEL = config.PRIMARY_MODEL
+FALLBACK_MODEL = config.FALLBACK_MODEL
 
 
 class ModelError(RuntimeError):
     pass
 
 
-def _get(host: str, path: str, timeout: int = 5) -> dict:
+def _get(host: str, path: str, timeout: int = config.MODEL_TAGS_TIMEOUT) -> dict:
     try:
         with urllib.request.urlopen(host + path, timeout=timeout) as r:
             return json.loads(r.read().decode("utf-8", errors="replace"))
@@ -62,7 +63,7 @@ def resolve_model(model: str, host: str = DEFAULT_HOST) -> tuple[str, str | None
 
 
 def chat_json(model: str, system: str, user: str, host: str = DEFAULT_HOST,
-              timeout: int = 180, num_ctx: int = 16384) -> dict:
+              timeout: int = config.MODEL_TIMEOUT, num_ctx: int = config.MODEL_NUM_CTX) -> dict:
     payload = json.dumps({
         "model": model, "stream": False, "format": "json",
         "options": {"num_ctx": num_ctx},

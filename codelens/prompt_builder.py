@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import re
 
+from . import config
+
 SCHEMA_HINT = """Return ONLY valid JSON, no markdown fences, matching this shape
 (angle brackets mark places you fill in — never copy them literally):
 {"answer": "...", "refs": [{"file": "<repo-relative path from evidence>", "start": <first line int>, "end": <last line int>, "quote": "<exact lines copied from evidence>"}]}"""
@@ -54,7 +56,7 @@ Rules: bullet points ONLY — no prose paragraphs anywhere in any section; small
 On refs, quality beats quantity: send at most 10, and include ONLY refs you can copy character-for-character from the numbered evidence — a missing ref is always better than a guessed one. Omit any claim's ref rather than approximating lines or quotes."""
 
 
-def _numbered(text: str, cap_lines: int = 140) -> str:
+def _numbered(text: str, cap_lines: int = config.EVIDENCE_MAX_LINES) -> str:
     """Prefix lines with 1-based numbers so the model can cite exact ranges."""
     lines = text.splitlines()[:cap_lines]
     width = len(str(len(lines))) if lines else 1

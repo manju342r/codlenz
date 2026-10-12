@@ -12,6 +12,7 @@
 - Never add paid/cloud LLM APIs, embeddings, or vector DBs — local-only is the product's core claim.
 
 ## Architecture (read before changing)
+- `config.py` owns every tunable (models, timeouts, limits, ports, filenames) with `CODELENS_*` env overrides. Add new settings there, never as literals in modules.
 - `scanner.py` produces the shared repo index; `scan`/`analyze`/`ask`/`serve` must all reuse it. Never add per-command scanning.
 - `source.py` resolves CLI input (local dir or Git URL) to a local directory via `resolve_source()`. Remote URLs are shallow-cloned to temp dirs, always cleaned up. All commands use it — never add a second resolution path.
 - `retriever.py` is keyword scoring only (filename/def/import/content). Keep it that way.

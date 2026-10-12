@@ -4,6 +4,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from . import config
+
 IGNORE_DIRS = {
     ".git", "node_modules", "venv", ".venv", "__pycache__", "dist",
     "build", "coverage", "vendor", ".tox", ".mypy_cache", ".pytest_cache",
@@ -40,11 +42,11 @@ ENTRY_CANDIDATES = [
 ]
 
 DEFAULTS = {
-    "max_files": 500,
-    "max_file_size": 100_000,
-    "max_files_to_model": 8,
-    "max_chars_per_file": 4000,
-    "max_total_chars": 20000,
+    "max_files": config.SCAN_MAX_FILES,
+    "max_file_size": config.SCAN_MAX_FILE_SIZE,
+    "max_files_to_model": config.SCAN_MAX_FILES_TO_MODEL,
+    "max_chars_per_file": config.SCAN_MAX_CHARS_PER_FILE,
+    "max_total_chars": config.SCAN_MAX_TOTAL_CHARS,
 }
 
 

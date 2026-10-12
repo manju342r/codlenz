@@ -13,7 +13,9 @@ import tempfile
 from pathlib import Path
 from urllib.parse import urlparse
 
-CLONE_TIMEOUT = 120
+from . import config
+
+CLONE_TIMEOUT = config.CLONE_TIMEOUT
 
 # scp-like SSH syntax: git@github.com:user/repo(.git)
 _SSH_RE = re.compile(r"^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+:[A-Za-z0-9._\-/]+(?:\.git)?/?$")
@@ -101,10 +103,10 @@ def _clone(url: str):
     git = shutil.which("git")
     if not git:
         raise SourceError("Git is not installed. Install Git to scan remote repositories.")
-    with tempfile.TemporaryDirectory(prefix="codelens-") as td:
+    with tempfile.TemporaryDirectory(prefix=config.TEMP_PREFIX) as td:
         try:
             proc = subprocess.run(
-                [git, "clone", "--depth", "1", url, td],
+                [git, "clone", "--depth", str(config.CLONE_DEPTH), url, td],
                 capture_output=True, text=True, timeout=CLONE_TIMEOUT,
             )
         except subprocess.TimeoutExpired:
