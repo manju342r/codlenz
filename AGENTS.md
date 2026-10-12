@@ -7,12 +7,13 @@
 - Entry: `codelens/cli.py` (`main()` Click group). No other entrypoints.
 
 ## Model (local only)
-- Ollama at `localhost:11434`, model `qwen2.5:3b`. Check with `ollama list`; pull with `ollama pull qwen2.5:3b`.
+- Ollama at `localhost:11434`, primary model `gemma3:4b`, fallback `qwen2.5:3b`. Check with `ollama list`; pull with `ollama pull gemma3:4b` / `ollama pull qwen2.5:3b`.
 - `model_client.chat_json` sets `num_ctx=16384` — required. Ollama's runner defaults to 4096 ctx and large prompts fail with HTTP 500 without the override. Don't remove it.
 - Never add paid/cloud LLM APIs, embeddings, or vector DBs — local-only is the product's core claim.
 
 ## Architecture (read before changing)
 - `scanner.py` produces the shared repo index; `scan`/`analyze`/`ask`/`serve` must all reuse it. Never add per-command scanning.
+- `source.py` resolves CLI input (local dir or Git URL) to a local directory via `resolve_source()`. Remote URLs are shallow-cloned to temp dirs, always cleaned up. All commands use it — never add a second resolution path.
 - `retriever.py` is keyword scoring only (filename/def/import/content). Keep it that way.
 - `verifier.py` is the trust boundary: model refs are guilty until proven innocent. Display ✅ only from `verify_refs`; never render a model-cited file:line as fact.
 - `server.py` is stdlib-only (`http.server`), binds 127.0.0.1, read-only analysis. Keep zero web dependencies.

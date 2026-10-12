@@ -6,7 +6,8 @@ import urllib.request
 import urllib.error
 
 DEFAULT_HOST = "http://localhost:11434"
-DEFAULT_MODEL = "qwen2.5:3b"
+DEFAULT_MODEL = "gemma3:4b"
+FALLBACK_MODEL = "qwen2.5:3b"
 
 
 class ModelError(RuntimeError):
@@ -28,14 +29,35 @@ def check_ollama(host: str = DEFAULT_HOST) -> list[str]:
     return [m.get("name", "") for m in data.get("models", [])]
 
 
-def check_model(model: str, host: str = DEFAULT_HOST) -> None:
-    models = check_ollama(host)
+def _installed(model: str, models: list[str]) -> bool:
     base = model.split(":")[0]
-    if not any(m == model or m.startswith(base + ":") for m in models):
-        raise ModelError(
-            f"Model '{model}' not found locally. Installed: {models or 'none'}. "
-            f"Run `ollama pull {model}`."
+    return any(m == model or m.startswith(base + ":") for m in models)
+
+
+def _alternate(model: str) -> str:
+    return FALLBACK_MODEL if model == DEFAULT_MODEL else DEFAULT_MODEL
+
+
+def resolve_model(model: str, host: str = DEFAULT_HOST) -> tuple[str, str | None]:
+    """Pick the model to use: requested if installed, else the alternate.
+
+    Returns (model_to_use, notice). notice is None when the requested model
+    is used, otherwise a human-readable explanation of the switch.
+    Raises ModelError only when neither is installed.
+    """
+    models = check_ollama(host)
+    if _installed(model, models):
+        return model, None
+    alt = _alternate(model)
+    if _installed(alt, models):
+        return alt, (
+            f"Model '{model}' not found locally — using fallback '{alt}' instead. "
+            f"Run `ollama pull {model}` to use it."
         )
+    raise ModelError(
+        f"Neither '{model}' nor fallback '{alt}' found locally. "
+        f"Installed: {models or 'none'}. Run `ollama pull {model}`."
+    )
 
 
 def chat_json(model: str, system: str, user: str, host: str = DEFAULT_HOST,
@@ -84,3 +106,25 @@ def chat_json(model: str, system: str, user: str, host: str = DEFAULT_HOST,
         raise ModelError("Model JSON field 'refs' must be a list.")
     data["refs"] = [r for r in refs if isinstance(r, dict)]
     return data
+
+
+def chat_with_fallback(model: str, system: str, user: str,
+                       host: str = DEFAULT_HOST, **kwargs) -> tuple[dict, str, str | None]:
+    """Chat with one retry on the alternate model after a generation failure.
+
+    Returns (data, used_model, notice). notice is None when the requested
+    model answered; otherwise it names the failure and the model that did.
+    The switch is always reported — never silent.
+    """
+    try:
+        return chat_json(model, system, user, host, **kwargs), model, None
+    except ModelError as first_err:
+        alt = _alternate(model)
+        try:
+            models = check_ollama(host)
+        except ModelError:
+            raise first_err
+        if not _installed(alt, models):
+            raise first_err
+        data = chat_json(alt, system, user, host, **kwargs)
+        return data, alt, f"'{model}' failed ({first_err}) — answered by fallback '{alt}'."
