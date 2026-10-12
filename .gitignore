@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.eggs/
+*.egg-info/
+dist/
+build/
+codelens-analysis.md
+.codelens_index.json
+.DS_Store

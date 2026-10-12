@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codelens"
+version = "0.1.0"
+description = "Local-first codebase understanding with open-weight AI + verified references"
+requires-python = ">=3.10"
+
+[project.scripts]
+codelens = "codelens.cli:main"
+
+dependencies = ["click>=8.0", "rich>=13.0"]
