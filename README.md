@@ -1,9 +1,9 @@
-# CodeLens
+# CodLenz
 
 ** Understand any codebase in minutes, not hours.
 CodeLens is an AI-powered codebase exploration assistant. It turns unfamiliar repositories into understandable, searchable, evidence-backed technical knowledge.
 
-## Why CodeLens?
+## Why CodLenz?
 
 Joining a project with 150+ files, multiple modules and complex dependencies means hours of opening files one by one. CodeLens scans the repository and gives you a technical briefing instead.
 
@@ -72,15 +72,11 @@ Then ask things like:
 | Gemma 3 4B | Primary model |
 | Existing Ollama model | Fallback model |
 | Git CLI | Clone remote repositories |
-| Retrieval system | Find relevant source code |
-| Citation verifier | Validate source references |
+| Retrieval system | Find relevant source code | | Validate source references |
 | HTML/CSS/JS | Demo interface |
 | Text-to-speech | Read analysis aloud |
 
 ## Who Is It For?
 
-New developers, open-source contributors, engineers on legacy code, teams onboarding members, students, and technical reviewers.
+Non technical people,New developers, open-source contributors, engineers on legacy code, teams onboarding members, students, and technical reviewers.
 
-## License
-
-TBD
