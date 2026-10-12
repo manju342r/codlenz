@@ -7,8 +7,10 @@ name = "codelens"
 version = "0.1.0"
 description = "Local-first codebase understanding with open-weight AI + verified references"
 requires-python = ">=3.10"
+dependencies = ["click>=8.0", "rich>=13.0"]
 
 [project.scripts]
 codelens = "codelens.cli:main"
 
-dependencies = ["click>=8.0", "rich>=13.0"]
+[tool.setuptools.packages.find]
+include = ["codelens*"]
